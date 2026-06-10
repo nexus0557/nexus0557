@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>의료영상정보학 퀴즈</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans KR',sans-serif;background:#f8f8f6;color:#1a1a1a;padding:20px;min-height:100vh}
+.wrap{max-width:680px;margin:0 auto;padding:1.5rem 0}
+.screen{display:none}
+.screen.active{display:block}
+.prog-bar{height:4px;background:#e0dfd8;border-radius:4px;margin-bottom:1rem}
+.prog-fill{height:4px;background:#7F77DD;border-radius:4px;transition:width .4s}
+.top-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.top-row span{font-size:13px;color:#666}
+.score-pill{background:#EEEDFE;color:#3C3489;font-size:12px;padding:3px 10px;border-radius:20px;font-weight:500}
+.q-label{font-size:12px;color:#888;margin-bottom:4px}
+.q-text{font-size:16px;font-weight:500;color:#1a1a1a;line-height:1.6;margin-bottom:1.25rem}
+.opts{display:flex;flex-direction:column;gap:8px;margin-bottom:1rem}
+.opt{padding:10px 14px;border:1px solid #ddd;border-radius:8px;cursor:pointer;font-size:14px;color:#1a1a1a;background:#fff;text-align:left;transition:background .12s,border-color .12s;line-height:1.5;font-family:'Noto Sans KR',sans-serif}
+.opt:hover:not(.disabled){background:#f3f3f0;border-color:#aaa}
+.opt.correct{background:#EAF3DE;border-color:#3B6D11;color:#27500A;pointer-events:none}
+.opt.wrong{background:#FCEBEB;border-color:#A32D2D;color:#791F1F;pointer-events:none}
+.opt.disabled{pointer-events:none}
+.fb{font-size:13px;padding:10px 14px;border-radius:8px;margin-bottom:1rem;line-height:1.55;display:none}
+.fb.ok{display:block;background:#EAF3DE;color:#27500A;border:1px solid #639922}
+.fb.fail{display:block;background:#FCEBEB;color:#791F1F;border:1px solid #A32D2D}
+.nav{display:flex;justify-content:flex-end}
+.btn{padding:8px 20px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;font-size:14px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:background .12s}
+.btn:hover{background:#f3f3f0}
+.btn:disabled{opacity:.35;cursor:default}
+.btn-primary{background:#7F77DD;color:#fff;border-color:#7F77DD}
+.btn-primary:hover{background:#534AB7;border-color:#534AB7}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.5rem}
+.metric{background:#f3f3f0;border-radius:8px;padding:12px;text-align:center}
+.metric .val{font-size:26px;font-weight:700;color:#1a1a1a}
+.metric .lbl{font-size:12px;color:#666;margin-top:2px}
+.result-msg{font-size:15px;color:#1a1a1a;text-align:center;margin-bottom:1.5rem;padding:12px;background:#f3f3f0;border-radius:8px}
+.wrong-list{display:flex;flex-direction:column;gap:10px;margin-bottom:1.5rem}
+.wrong-card{border:1px solid #ddd;border-radius:8px;padding:12px 14px;background:#fff}
+.wrong-card .wq{font-size:13px;font-weight:500;color:#1a1a1a;margin-bottom:6px;line-height:1.5}
+.wrong-card .wa{font-size:12px;color:#791F1F;margin-bottom:3px}
+.wrong-card .wc{font-size:12px;color:#27500A;margin-bottom:4px}
+.wrong-card .we{font-size:12px;color:#666;line-height:1.5}
+.section-title{font-size:14px;font-weight:500;color:#1a1a1a;margin-bottom:10px}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.start-wrap{text-align:center;padding:2.5rem 0}
+.start-title{font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:8px}
+.start-sub{font-size:14px;color:#666;margin-bottom:2rem;line-height:1.7}
+.tag{display:inline-block;font-size:11px;padding:3px 10px;border-radius:20px;background:#EEEDFE;color:#3C3489;margin-right:4px;margin-bottom:6px;font-weight:500}
+.note-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.cat-badge{font-size:11px;color:#534AB7;margin-bottom:4px;font-weight:500}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div id="s-start" class="screen active">
+  <div class="start-wrap">
+    <div class="start-title">의료영상정보학 퀴즈</div>
+    <div class="start-sub">100문제 DB에서 20문제 랜덤 추출<br>선지 순서도 매번 섞임 · 오답노트 자동 저장</div>
+    <div style="margin-bottom:1.5rem">
+      <span class="tag">젤라틴·잠상형성</span><span class="tag">필름 구조</span><span class="tag">특성곡선</span><span class="tag">MTF·SNR·CNR</span><span class="tag">DQE·현상</span>
+    </div>
+    <button class="btn btn-primary" onclick="startQuiz()">시험 시작</button>
+    <span style="display:inline-block;width:8px"></span>
+    <button class="btn" onclick="showWrongNote()" id="note-btn" style="display:none">오답노트 보기</button>
+  </div>
+</div>
+
+<div id="s-quiz" class="screen">
+  <div class="prog-bar"><div class="prog-fill" id="prog"></div></div>
+  <div class="top-row">
+    <span id="q-counter"></span>
+    <span class="score-pill" id="score-pill">맞은 수: 0</span>
+  </div>
+  <div class="q-label" id="q-label"></div>
+  <div class="q-text" id="q-text"></div>
+  <div class="opts" id="opts"></div>
+  <div class="fb" id="fb"></div>
+  <div class="nav"><button class="btn" id="next-btn" disabled onclick="nextQ()">다음 →</button></div>
+</div>
+
+<div id="s-result" class="screen">
+  <div class="metrics">
+    <div class="metric"><div class="val" id="r-score"></div><div class="lbl">정답</div></div>
+    <div class="metric"><div class="val" id="r-wrong"></div><div class="lbl">오답</div></div>
+    <div class="metric"><div class="val" id="r-pct"></div><div class="lbl">정답률</div></div>
+  </div>
+  <div class="result-msg" id="r-msg"></div>
+  <div class="section-title" id="wrong-title"></div>
+  <div class="wrong-list" id="wrong-list"></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startQuiz()">다시 풀기 (새 랜덤)</button>
+    <button class="btn" onclick="goHome()">홈으로</button>
+  </div>
+</div>
+
+<div id="s-note" class="screen">
+  <div class="note-header">
+    <span style="font-size:16px;font-weight:500">오답노트</span>
+    <div class="btn-row">
+      <button class="btn" style="font-size:12px;padding:5px 12px" onclick="clearNote()">초기화</button>
+      <button class="btn" onclick="goHome()">← 돌아가기</button>
+    </div>
+  </div>
+  <div class="wrong-list" id="note-list"></div>
+</div>
+
+</div>
+<script>
+const DB=[
+{q:"젤라틴의 역할이 아닌 것은?",opts:["결정성장 매개체","접촉제와 결합제","시닌유제 조제 역할","X선을 직접 흡수하여 잠상 형성"],ans:3,exp:"젤라틴은 X선 직접 흡수 역할을 하지 않는다.",cat:"젤라틴"},
+{q:"Gurney-Mott 이론에서 아잠상핵이 형성되는 단계는?",opts:["2단계","3단계","4단계","5단계"],ans:3,exp:"5단계에서 두 Ag 원자가 형성되어 아잠상핵이 완성된다.",cat:"잠상형성"},
+{q:"Mitchell 이론이 Gurney-Mott 이론과 다른 가장 큰 차이점은?",opts:["은이온의 역할이 없다","4·5단계에서 단일 은 원자가 다른 전자의 포획단커로 활동하지 않는다","포획중심이 존재하지 않는다","아잠상핵이 형성되지 않는다"],ans:1,exp:"Mitchell 이론 4·5단계에서 단일 은 원자는 포획단커로 활동하지 않는다.",cat:"잠상형성"},
+{q:"양면유제 필름에서 잠상이 형성되는 층은?",opts:["보호막층","감광유제층","아래도포층","지지체"],ans:1,exp:"잠상은 감광유제층(젤라틴+할로겐화은)에서 형성된다.",cat:"필름구조"},
+{q:"현재 필름 지지체로 가장 많이 사용되는 물질은?",opts:["유리","3초산 셀룰로스","종이","폴리에스테르"],ans:3,exp:"현재는 폴리에스테르가 사용된다. 입체적 안정성, 방수, 높은 장력이 장점.",cat:"필름구조"},
+{q:"헬레이션(Halation)이 발생하는 원인은?",opts:["유제층이 두꺼워서","감광유제층 손상","지지체 경계선에서 빛이 반사","보호막층이 없어서"],ans:2,exp:"공기가 있는 지지체의 경계선에서 빛이 반사되어 유제층을 다시 노출시킨다.",cat:"필름구조"},
+{q:"증감지 반사층의 단점은?",opts:["감도 감소","환자 선량 증가","영상이 약간 흐려지고 불선예도 증가","해상도 향상"],ans:2,exp:"반사층은 빛이 퍼지면서 영상이 약간 흐려지고 불선예도가 증가한다.",cat:"필름구조"},
+{q:"특성곡선(H-D 곡선)의 X축과 Y축이 바르게 짝지어진 것은?",opts:["X축: 농도값 / Y축: 노출량","X축: 시간 / Y축: 노출량","X축: log EX / Y축: 농도값(D)","X축: 농도값(D) / Y축: log EX"],ans:2,exp:"X축은 노출량의 대수값(log EX), Y축은 농도값(D)이다.",cat:"특성곡선"},
+{q:"특성곡선에서 대조도(Contrast)를 측정하는 구간은?",opts:["발가락부(Toe)","직선부(Straight-line)","어깨부(Shoulder)","전 구간"],ans:1,exp:"직선부(Straight-line)가 대조도 측정 영역이다.",cat:"특성곡선"},
+{q:"노출관용도와 대조도의 관계는?",opts:["비례","반비례","무관","제곱 비례"],ans:1,exp:"노출관용도와 대조도는 반비례 관계이다.",cat:"특성곡선"},
+{q:"특성곡선 작성법 중 재현성이 가장 좋은 방법은?",opts:["시간 고정법","거리 변경법","Al step wedge method","감광계법"],ans:3,exp:"감광계법이 재현성이 가장 좋다.",cat:"특성곡선"},
+{q:"자동현상기 처리 단계의 올바른 순서는?",opts:["정착→현상→수세→건조","현상→수세→정착→건조","수세→현상→정착→건조","현상→정착→수세→건조"],ans:3,exp:"현상→정착→수세→건조 순서이다.",cat:"현상"},
+{q:"현상액의 적정 pH 범위는?",opts:["4.0~5.0","6.8~7.4","8.0~9.0","9.5~11.0"],ans:3,exp:"현상액 pH는 9.5~11.0이다. 정착액은 4.0~5.0.",cat:"현상"},
+{q:"MTF에 대한 설명으로 틀린 것은?",opts:["공간주파수가 높을수록 MTF는 낮아진다","MTF=1이면 원래 명암 100% 전달","MTF는 노이즈 포함 병변 검출능력을 평가한다","ESF→LSF→MTF 순서로 계산한다"],ans:2,exp:"노이즈를 포함한 병변 검출능력은 CNR이다. MTF는 노이즈 제외 해상도 평가.",cat:"MTF"},
+{q:"SNR 공식으로 올바른 것은?",opts:["신호×잡음","잡음/신호","신호+잡음","신호/잡음"],ans:3,exp:"SNR = 신호(Signal) / 잡음(Noise)",cat:"SNR"},
+{q:"CNR이 높아질 때의 변화로 옳은 것은?",opts:["대조도↓, 노이즈↑","대조도↑, 노이즈↑","대조도↑, 노이즈↓","대조도↓, 노이즈↓"],ans:2,exp:"CNR↑ = 대조도↑, 노이즈↓ → 병변과 배경 구분이 명확해진다.",cat:"CNR"},
+{q:"DQE가 높을 때의 특징이 아닌 것은?",opts:["적은 방사선으로 촬영 가능","노이즈가 적음","환자 피폭 감소","더 많은 선량 필요"],ans:3,exp:"DQE가 높으면 적은 선량으로 좋은 영상을 만들 수 있다.",cat:"DQE"},
+{q:"필름 측정농도(OD) 공식으로 옳은 것은?",opts:["OD = log(It/I₀)","OD = log(I₀/It)","OD = I₀×It","OD = I₀-It"],ans:1,exp:"OD = log₁₀(I₀/It). I₀=입사광, It=투과광",cat:"특성곡선"},
+{q:"디지털 특성곡선과 필름 특성곡선의 차이로 옳은 것은?",opts:["디지털은 S자형이다","필름 특성곡선은 거의 직선이다","디지털의 관용도가 좁다","필름은 S자형, 디지털은 거의 직선이다"],ans:3,exp:"필름은 S자형, 디지털은 거의 직선. 디지털의 관용도가 더 넓다.",cat:"특성곡선"},
+{q:"양면유제 필름의 장점으로 틀린 것은?",opts:["필름 감도 증가","환자 선량 감소","대조도 증가","단면유제보다 선명도 높음"],ans:3,exp:"양면유제는 감도·대조도 향상, 선량 감소가 장점이나 선명도는 단면유제보다 낮다.",cat:"필름구조"},
+{q:"Gurney-Mott 이론 1단계에서 일어나는 일은?",opts:["두 Ag 원자가 결합하여 아잠상핵 형성","전자가 포획중심에 붙잡히고 Ag⁺가 이동하여 은 원자 형성","단일 은 원자가 불안정하여 다시 분리","은 원자가 다른 전자의 포획단커로 활동"],ans:1,exp:"1단계: 빛에 의해 방출된 전자가 포획중심에 붙잡히고 Ag⁺이 이동하여 은 원자를 형성한다.",cat:"잠상형성"},
+{q:"젤라틴이 결정성장 매개체로 작용할 때 하는 역할은?",opts:["브롬화은의 형성과 성장을 유지","X선을 직접 흡수","잠상을 가시화","전자포획중심을 만듦"],ans:0,exp:"젤라틴은 브롬화은의 형성과 성장을 유지하고, 결정들이 서로 충돌하지 않게 조절한다.",cat:"젤라틴"},
+{q:"양면유제 필름에서 보호막층의 역할은?",opts:["잠상 형성","기계적 손상으로부터 유제 보호","지지체에 유제 접착","빛 흡수"],ans:1,exp:"보호막층은 투명하고 견고한 젤라틴의 얇은 층으로 기계적 손상으로부터 유제를 보호한다.",cat:"필름구조"},
+{q:"아래도포층(하인층)의 역할은?",opts:["잠상 형성","기계적 손상 보호","지지체에 유제를 접착","빛 반사 방지"],ans:2,exp:"아래도포층은 지지체와 감광유제층 사이에서 지지체에 유제를 접착시키는 역할을 한다.",cat:"필름구조"},
+{q:"감광유제층의 구성 성분으로 옳은 것은?",opts:["폴리에스테르+TiO₂","젤라틴+할로겐화은","젤라틴+폴리에스테르","TiO₂+MgO"],ans:1,exp:"감광유제층은 젤라틴과 할로겐화은(브롬화은, 요오드화은, 염화은)으로 구성된다.",cat:"필름구조"},
+{q:"증감지 흡수층의 장점은?",opts:["감도 증가","환자 선량 감소","선예도 향상, 불선예도 감소","영상이 더 밝아짐"],ans:2,exp:"흡수층은 빛 퍼짐을 감소시켜 선예도↑, 불선예도↓ 가 장점이나 감도는 떨어진다.",cat:"필름구조"},
+{q:"헬레이션 방지층이 위치하는 곳은?",opts:["필름 앞면","유제층과 지지체 사이","필름 뒷면","보호막층 위"],ans:2,exp:"헬레이션 방지층은 필름 뒷면에 위치하여 지지체 경계에서의 빛 반사를 막는다.",cat:"필름구조"},
+{q:"특성곡선의 발가락부(Toe)는 어느 영역인가?",opts:["높은 노출 영역","대조도 측정 영역","낮은 노출 영역","중간 노출 영역"],ans:2,exp:"발가락부(Toe)는 낮은 노출 영역으로 특성곡선의 하단부이다.",cat:"특성곡선"},
+{q:"특성곡선의 어깨부(Shoulder)는 어느 영역인가?",opts:["낮은 노출 영역","대조도 측정 영역","높은 노출 영역","중간 노출 영역"],ans:2,exp:"어깨부(Shoulder)는 높은 노출 영역으로 특성곡선의 상단부이다.",cat:"특성곡선"},
+{q:"노출관용도가 큰 필름의 노출 허용 범위(kVp)는?",opts:["90~105","70~130","60~80","110~150"],ans:1,exp:"관용도가 큰 필름은 70~130, 관용도가 작은 필름은 90~105 범위를 가진다.",cat:"특성곡선"},
+{q:"특성곡선 작성법 중 재현성이 가장 떨어지는 방법은?",opts:["감광계법","시간 고정법","거리 변경법","Al step wedge method"],ans:3,exp:"Al step wedge(Boot Strap) method는 재현성이나 정확도가 가장 떨어진다.",cat:"특성곡선"},
+{q:"현상에서 금속 은으로의 변환 반응 이름은?",opts:["산화반응","환원반응(환원작정)","가수분해반응","중화반응"],ans:1,exp:"현상 중 유제 내 할로겐화은이 금속 은으로 환원되는 환원반응(환원작정)이 일어난다.",cat:"현상"},
+{q:"좋은 현상액의 pH 범위는?",opts:["4.0~5.0","7.4~8.0","9.5~11.0","12.0~14.0"],ans:2,exp:"좋은 현상액은 pH 9.5~11.0을 유지한다.",cat:"현상"},
+{q:"정착액의 pH 범위는?",opts:["4.0~5.0","7.0~8.0","9.5~11.0","12.0~14.0"],ans:0,exp:"정착액의 pH는 4.0~5.0이다.",cat:"현상"},
+{q:"현상에 영향을 미치는 요소가 아닌 것은?",opts:["현상액 구성성분","현상온도","현상시간","필름의 두께"],ans:3,exp:"현상에 영향을 미치는 것은 현상액 구성성분, 현상봉용액량, 현상온도, 현상시간이다.",cat:"현상"},
+{q:"MTF = 1이 의미하는 것은?",opts:["명암 정보를 전혀 전달 못함","원래 명암의 50% 전달","원래 명암 100% 전달","해상도가 0임"],ans:2,exp:"MTF=1은 원래 명암을 100% 전달한다는 의미이다.",cat:"MTF"},
+{q:"MTF = 0이 의미하는 것은?",opts:["원래 명암 100% 전달","명암 정보를 전혀 전달 못함","해상도가 최대","공간주파수가 0"],ans:1,exp:"MTF=0은 명암 정보를 전혀 전달하지 못한다는 의미이다.",cat:"MTF"},
+{q:"MTF 그래프에서 가로축은 무엇인가?",opts:["MTF 값(0~1)","농도값(D)","공간주파수(lp/mm)","노출량(log E)"],ans:2,exp:"MTF 그래프 가로축은 공간주파수(lp/mm), 세로축은 MTF 값(0~1)이다.",cat:"MTF"},
+{q:"MTF와 공간주파수의 관계는?",opts:["비례","반비례","무관","제곱 비례"],ans:1,exp:"공간주파수가 높아질수록 MTF는 낮아진다(반비례).",cat:"MTF"},
+{q:"MTF 계산 순서로 올바른 것은?",opts:["LSF→ESF→MTF","MTF→LSF→ESF","ESF→LSF→MTF","MSF→ESF→MTF"],ans:2,exp:"ESF(경계 선명도 측정)→LSF(선의 퍼짐정도)→MTF(최종 선명도 평가) 순서이다.",cat:"MTF"},
+{q:"ESF가 측정하는 것은?",opts:["선의 퍼짐 정도","경계 선명도","최종 영상 선명도","샘플링 신뢰성"],ans:1,exp:"ESF(Edge Spread Function)는 경계 선명도를 측정하며 MTF 계산의 출발점이다.",cat:"MTF"},
+{q:"LSF 폭이 좁고 뾰족할수록 어떻게 되는가?",opts:["해상도 감소","해상도 증가","대조도 감소","노이즈 증가"],ans:1,exp:"LSF 폭이 좁고 뾰족할수록 해상도가 증가한다.",cat:"MTF"},
+{q:"CNR과 MTF의 차이로 옳은 것은?",opts:["MTF는 노이즈 포함, CNR은 노이즈 제외","MTF와 CNR은 동일한 지표","MTF는 노이즈 제외 해상도, CNR은 노이즈 포함 병변검출능력","CNR이 높으면 MTF도 반드시 높다"],ans:2,exp:"MTF는 노이즈 제외 해상도(선명도) 평가, CNR은 노이즈 포함 실제 병변 검출능력 평가이다.",cat:"CNR"},
+{q:"CNR이 클수록 어떻게 되는가?",opts:["병변 식별 어려워짐","병변과 배경의 구획이 잘 되어 진단이 쉬워짐","노이즈가 증가함","해상도가 감소함"],ans:1,exp:"CNR이 클수록 병변과 배경의 구획이 잘 되어 진단이 쉬워진다.",cat:"CNR"},
+{q:"DQE가 반영하는 요소로 묶인 것은?",opts:["감도, 노출량, 현상온도","해상력, 대조도, 노이즈","SNR, 대조도, 촬영거리","잠상, 아잠상, 핵 형성"],ans:1,exp:"DQE는 해상력, 대조도, 노이즈를 종합적으로 반영하는 지표이다.",cat:"DQE"},
+{q:"DQE의 정의로 가장 옳은 것은?",opts:["노이즈 대비 신호의 비율","입사된 X선 신호를 얼마나 전체 신호로 변환했는지의 비율","MTF와 SNR의 곱","공간주파수에 따른 영상 전달 능력"],ans:1,exp:"DQE는 입사된 X선 신호를 얼마나 전체 신호로 변환했는지에 대한 비율이다.",cat:"DQE"},
+{q:"디지털 특성곡선에서 과다노출 시 대처 방법은?",opts:["영상 손상으로 대처 불가","어느 정도 보정 가능","현상을 다시 해야 함","필름을 교체해야 함"],ans:1,exp:"디지털은 과다노출이 되어도 어느 정도 보정이 가능하다. 반면 필름은 쉽게 영상이 손상된다.",cat:"특성곡선"},
+{q:"양면유제 필름의 감도를 높이는 원리는?",opts:["지지체를 두껍게 하여","유제의 양을 두 배로 하여","보호막층을 추가하여","할로겐화은 농도를 낮춰서"],ans:1,exp:"양면이니까 유제의 양을 두 배로 하는 것이 시스템의 감도를 높인다.",cat:"필름구조"},
+{q:"감광계법에서 사용하는 빛의 파장은?",opts:["200nm, 300nm","430nm, 550nm","600nm, 700nm","100nm, 150nm"],ans:1,exp:"감광계법은 430nm, 550nm의 빛을 이용한다.",cat:"특성곡선"},
+{q:"X선 필름 유제에 원칙적으로 사용하는 형광체는?",opts:["브롬화은","염화은","요오드-브롬화은","황화아연"],ans:2,exp:"X선 필름 유제는 원칙적으로 요오드-브롬화은을 사용한다.",cat:"필름구조"},
+{q:"현상액이 포함하는 성분으로 옳은 것은?",opts:["브롬액+현상개시제(유기산+KBr)","브롬액+정착제","산성용액+은이온","알칼리+할로겐화은"],ans:0,exp:"현상액 = 브롬액 + 현상개시제(유기산+KBr), pH 9.5~11.0 유지.",cat:"현상"},
+{q:"현상온도와 농도의 관계는?",opts:["반비례","무관","비례","제곱 비례"],ans:2,exp:"현상 온도와 농도는 비례 관계이다.",cat:"현상"},
+{q:"SPP가 평가하는 것은?",opts:["해상도","대조도","샘플링 신뢰성","병변 검출 능력"],ans:2,exp:"SPP는 샘플링 신뢰성을 평가한다.",cat:"MTF"},
+{q:"폴리에스테르 지지체의 장점이 아닌 것은?",opts:["입체적 안정성","광학적 투명성","화학적 메모리","X선을 직접 흡수"],ans:3,exp:"폴리에스테르 장점: 입체적 안정성, 광학적 투명성, 방수, 높은 장력, 유연성, 화학적 메모리, 현상처리액에 불활성, 난연성.",cat:"필름구조"},
+{q:"증감지 반사층에 사용되는 물질은?",opts:["KBr","AgBr","TiO₂, MgO","NaCl"],ans:2,exp:"반사층에는 TiO₂(이산화티타늄), MgO(산화마그네슘)를 희박하게 얇게(30㎛) 도포한다.",cat:"필름구조"},
+{q:"필름 특성곡선이 S자형인 이유로 가장 적절한 것은?",opts:["디지털 신호 처리 때문에","낮은 노출과 높은 노출 영역에서 농도 변화가 비선형적이기 때문에","현상온도가 높아서","지지체 물질의 특성 때문에"],ans:1,exp:"낮은 노출(Toe)과 높은 노출(Shoulder) 영역에서 농도 변화가 비선형적이어서 S자형이 된다.",cat:"특성곡선"},
+{q:"DQE↑이면 나타나는 변화로 옳지 않은 것은?",opts:["영상품질↑","SNR↑","환자피폭↓","더 많은 X선 선량 필요"],ans:3,exp:"DQE↑ = 영상품질↑ = SNR↑ = 환자피폭↓ = 적은 선량으로 고품질 영상.",cat:"DQE"},
+{q:"Gurney-Mott 이론 4단계의 핵심 내용은?",opts:["아잠상핵 완성","은 원자 불안정하여 분리","단일 은 원자가 다른 전자의 포획단커로 활동","Ag⁺이 포획중심으로 이동"],ans:2,exp:"4단계: 짧은 시간 동안 단일 은 원자는 다른 전자를 위한 포획 단커로 활동한다.",cat:"잠상형성"},
+{q:"감광유제층에 포함된 할로겐화은의 종류가 아닌 것은?",opts:["브롬화은","요오드화은","염화은","불화은"],ans:3,exp:"감광유제층에는 브롬화은, 요오드화은, 염화은이 포함된다. 불화은은 포함되지 않는다.",cat:"필름구조"},
+{q:"대조도(Contrast)의 정의는?",opts:["필름 전체의 평균 농도","필름에서 인접한 두 부분 사이의 농도차","노출량과 농도의 비율","최고 농도와 최저 농도의 합"],ans:1,exp:"대조도는 필름에서 인접한 두 부분 사이의 농도차이다.",cat:"특성곡선"},
+{q:"관용도가 큰 필름의 특징은?",opts:["촬영조건이 조금 달라도 영상이 잘 나옴","대조도가 높음","직선부가 많음","선명도가 높음"],ans:0,exp:"관용도가 크면 촬영조건이 조금 달라도 영상이 잘 나온다. 단, 대조도는 낮아진다.",cat:"특성곡선"},
+{q:"현상에서 브롬이온과 결합하면 어떻게 되는가?",opts:["현상 촉진","pH가 떨어진다","브롬이온과 결합 불가","현상액 pH 높아짐"],ans:1,exp:"브롬이온과 결합하면 pH가 떨어진다.",cat:"현상"},
+{q:"CNR 측정에 포함되는 요소는?",opts:["노이즈를 제외한 해상도","노이즈를 포함한 피사체 검출능력","MTF와 동일한 개념","공간주파수별 전달 능력"],ans:1,exp:"CNR은 노이즈를 포함한 피사체 검출능력 특성을 가장 잘 표현하는 용어이다.",cat:"CNR"},
+{q:"X선 필름의 최대 농도는 보통 어디까지 사용하는가?",opts:["1.0까지","2.0까지","3.5까지","5.0까지"],ans:2,exp:"X선 필름의 최대 농도는 보통 3.5까지 사용한다.",cat:"특성곡선"},
+{q:"거리 변경법에서 무엇을 이용하는가?",opts:["감광계의 빛","검사거리에 따른 농도의 변화","Al 계단","시간 변화"],ans:1,exp:"거리 변경법은 검사거리(cm)에 따른 농도의 변화를 이용한다.",cat:"특성곡선"},
+{q:"시간 고정법에서 노출량을 늘리는 방식은?",opts:["kVp를 2배씩 증가","Ex = 2.0^x 씩 늘려나감","거리를 절반으로","필름을 겹쳐서"],ans:1,exp:"시간 고정법은 재시간을 Ex = 2.0^x씩 늘려나가며, 가로축 log Ex=0.3씩 증가한다.",cat:"특성곡선"},
+{q:"양면유제 필름에서 대조도가 높은 이유는?",opts:["지지체가 얇아서","두꺼운 코팅의 단면유제보다 항상 높은 대조도 나타남","보호막층이 두꺼워서","현상을 두 번 하기 때문에"],ans:1,exp:"두꺼운 코팅 두께를 가진 단면유제 필름보다 항상 높은 대조도를 나타낸다.",cat:"필름구조"},
+{q:"MTF가 높다는 것이 의미하는 것은?",opts:["선명도가 낮다","해상력이 좋고 작은 것도 잘 구분된다","노이즈가 많다","대조도가 낮다"],ans:1,exp:"MTF가 높다 = 선명하다, 해상력이 좋다, 작은 것도 잘 구분된다.",cat:"MTF"},
+{q:"SNR이 높을수록 영상의 특성은?",opts:["노이즈가 많고 흐림","깨끗하고 잡음이 적음","대조도가 낮음","해상도가 낮음"],ans:1,exp:"SNR이 높을수록 신호가 잡음보다 강하여 깨끗한 영상이 된다.",cat:"SNR"},
+{q:"젤라틴의 화환력 물성 중 캘핑오 물질의 역할은?",opts:["브롬화은 결정 분해","유황락탕들을 생성하여 브롬화은 결정 안에서 흑색 영역을 만듦","X선 직접 흡수","현상 촉진"],ans:1,exp:"캘핑오 물질은 유황락탕들을 생성하여 브롬화은 결정 안에서 흑색 영역을 만든다.",cat:"젤라틴"},
+{q:"Gurney-Mott 이론 2단계에서 마지막 결과는?",opts:["온도가 낮아짐","전자와 은이온이 오랫동안 포획되는 상태","빛 조사가 없어짐","전자가 매우 빨라짐"],ans:1,exp:"2단계에서 마침내 전자(+)와 은이온이 오랫동안 포획되는 상태가 된다.",cat:"잠상형성"},
+{q:"Mitchell 이론에서 2번째 은이온을 포획하면 어떻게 되는가?",opts:["다시 분리됨","아잠상핵 형성 성공","포획중심 소멸","전자포획 불가"],ans:1,exp:"Mitchell 이론에서 2번째 은이온을 포획하면 성공적으로 아잠상핵이 형성된다.",cat:"잠상형성"},
+{q:"필름 특성곡선에서 포그(Fog)란?",opts:["최고 농도","노출 없이도 생기는 기본 농도","직선부의 기울기","노출 관용도"],ans:1,exp:"포그(Fog)는 노출 없이도 생기는 기본 농도이다.",cat:"특성곡선"},
+{q:"현상시간이 길어질수록 농도는?",opts:["감소","증가","변화없음","S자형으로 변함"],ans:1,exp:"현상시간이 길어질수록 농도는 증가한다.",cat:"현상"},
+{q:"DQE를 종합적으로 나타내는 요소의 합은?",opts:["MTF + SNR","해상력 + 대조도 + 노이즈 + SNR + 검출기효율","감도 + 관용도 + 대조도","포그 + 감도 + 최고농도"],ans:1,exp:"DQE = 해상력 + 대조도 + 노이즈 + SNR + 검출기효율로 종합 평가된다.",cat:"DQE"},
+{q:"CNR 낮을 때 병변 식별은?",opts:["쉬워진다","어려워진다","무관하다","해상도에만 영향"],ans:1,exp:"CNR이 낮으면 대조도↓, 노이즈↑이므로 병변 식별이 어려워진다.",cat:"CNR"},
+{q:"필름의 감도(Speed)란?",opts:["노출량과 농도 관계","필름이 얼마나 작은 방사선량에 반응하는지","적정 영상이 나타나는 노출 범위","농도 차이를 얼마나 잘 나타내는지"],ans:1,exp:"감도(Speed)는 필름이 얼마나 작은 방사선량에 반응하는지를 나타낸다.",cat:"특성곡선"},
+{q:"평행광 농도와 확산광 농도의 크기 비교는?",opts:["평행광 농도 < 확산광 농도","평행광 농도 = 확산광 농도","평행광 농도 > 확산광 농도","경우에 따라 다름"],ans:2,exp:"평행광 농도 > 확산광 농도이며, 평행광 농도는 미세 농도로 측정한다.",cat:"특성곡선"},
+{q:"인출은 현상액의 문제점은?",opts:["현상이 느림","미노출 입자에도 작용하여 화학적 포그 생성","pH가 너무 낮음","브롬이온과 결합하지 못함"],ans:1,exp:"인출은 현상액은 미노출된 입자에도 작용하여 화학적 포그를 생성한다.",cat:"현상"},
+{q:"LSF에서 폭이 넓고 퍼져 있으면?",opts:["해상도 증가","해상도 감소","대조도 증가","SNR 증가"],ans:1,exp:"LSF 폭이 넓고 퍼져 있으면 해상도가 감소한다.",cat:"MTF"},
+{q:"감도 측정 용도의 목적은?",opts:["현상 속도 측정","필름에 단계적으로 다른 양의 X선이나 빛을 조사하기 위한 도구","환자 선량 계산","지지체 강도 측정"],ans:1,exp:"감도 측정 용도는 필름에 단계적으로 다른 양의 X선이나 빛을 조사하기 위한 도구이다.",cat:"특성곡선"},
+{q:"헬레이션 방지층 색소의 역할은?",opts:["빛을 반사","빛을 흡수하여 반사를 막음","잠상 형성 촉진","현상 속도 향상"],ans:1,exp:"헬레이션 방지층의 색소는 들어온 빛을 흡수하여 반사를 막는다.",cat:"필름구조"},
+{q:"관용도(Latitude)의 정의는?",opts:["최고 농도와 최저 농도의 차","적정 영상이 나타나는 노출 범위","농도 차이를 나타내는 능력","노출량의 대수값"],ans:1,exp:"관용도(Latitude)는 적정 영상이 나타나는 노출 범위이다.",cat:"특성곡선"},
+{q:"직선부가 많을수록 노출관용도는?",opts:["증가","감소","무관","S자형으로 변함"],ans:1,exp:"직선부가 많다 → 노출관용도↓. 직선부가 없다 → 노출관용도↑.",cat:"특성곡선"},
+{q:"MTF 공식에서 기록(정보)량/발생(정보)량의 비율이 의미하는 것은?",opts:["노이즈 수준","해상도 전달 능력","감도 크기","관용도 범위"],ans:1,exp:"MTF = 기록(정보)량 / 발생(정보)량 = 해상도 전달 능력을 의미한다.",cat:"MTF"},
+{q:"반사층의 두께는?",opts:["10㎛","20㎛","30㎛","50㎛"],ans:2,exp:"반사층은 TiO₂, MgO를 희발물로 얇게 30㎛ 도포한다.",cat:"필름구조"},
+{q:"감광유제층의 두께는 약 얼마인가?",opts:["1~2nm","5~6㎛","50~100㎛","150~250nm"],ans:1,exp:"감광유제층의 두께는 5~6㎛이다.",cat:"필름구조"}
+];
+
+let quiz=[],cur=0,score=0,answered=false,wrongItems=[];
+let allWrong=JSON.parse(localStorage.getItem('wrongNote')||'[]');
+
+function shuffle(arr){return arr.slice().sort(()=>Math.random()-0.5)}
+
+function startQuiz(){
+  quiz=shuffle(DB).slice(0,20);
+  cur=0;score=0;wrongItems=[];
+  showScreen('s-quiz');
+  renderQ();
+}
+
+function renderQ(){
+  const q=quiz[cur];
+  document.getElementById('prog').style.width=(cur/20*100)+'%';
+  document.getElementById('q-counter').textContent=(cur+1)+' / 20';
+  document.getElementById('score-pill').textContent='맞은 수: '+score;
+  document.getElementById('q-label').textContent='Q'+(cur+1)+' · '+q.cat;
+  document.getElementById('q-text').textContent=q.q;
+  document.getElementById('fb').className='fb';
+  document.getElementById('next-btn').disabled=true;
+  answered=false;
+  const shuffledOpts=shuffle(q.opts.map((o,i)=>({o,orig:i})));
+  const container=document.getElementById('opts');
+  container.innerHTML='';
+  shuffledOpts.forEach(({o,orig})=>{
+    const b=document.createElement('button');
+    b.className='opt';b.textContent=o;
+    b.onclick=()=>select(orig,shuffledOpts);
+    container.appendChild(b);
+  });
+}
+
+function select(origIdx,shuffledOpts){
+  if(answered)return;
+  answered=true;
+  const q=quiz[cur];
+  const btns=document.querySelectorAll('.opt');
+  btns.forEach(b=>b.classList.add('disabled'));
+  const fb=document.getElementById('fb');
+  shuffledOpts.forEach(({o,orig},i)=>{
+    if(orig===q.ans)btns[i].classList.add('correct');
+    if(orig===origIdx&&origIdx!==q.ans)btns[i].classList.add('wrong');
+  });
+  if(origIdx===q.ans){
+    score++;
+    fb.className='fb ok';
+    fb.textContent='정답! '+q.exp;
+  } else {
+    fb.className='fb fail';
+    fb.textContent='오답. '+q.exp;
+    wrongItems.push({q:q.q,myAns:q.opts[origIdx],correct:q.opts[q.ans],exp:q.exp,cat:q.cat});
+    const exists=allWrong.findIndex(w=>w.q===q.q);
+    if(exists===-1)allWrong.push({q:q.q,myAns:q.opts[origIdx],correct:q.opts[q.ans],exp:q.exp,cat:q.cat});
+    else allWrong[exists]={q:q.q,myAns:q.opts[origIdx],correct:q.opts[q.ans],exp:q.exp,cat:q.cat};
+    localStorage.setItem('wrongNote',JSON.stringify(allWrong));
+  }
+  document.getElementById('score-pill').textContent='맞은 수: '+score;
+  document.getElementById('next-btn').disabled=false;
+}
+
+function nextQ(){
+  cur++;
+  if(cur>=20){showResult();return;}
+  renderQ();
+}
+
+function showResult(){
+  showScreen('s-result');
+  const pct=Math.round(score/20*100);
+  document.getElementById('r-score').textContent=score;
+  document.getElementById('r-wrong').textContent=(20-score);
+  document.getElementById('r-pct').textContent=pct+'%';
+  let msg='';
+  if(pct>=90)msg='완벽해! 시험 자신 있겠는걸';
+  else if(pct>=70)msg='잘했어! 틀린 문제 한번 더 복습하자.';
+  else if(pct>=50)msg='절반 이상! 오답노트 꼭 복습해봐.';
+  else msg='노트 다시 읽고 재도전해봐!';
+  document.getElementById('r-msg').textContent=msg;
+  const wt=document.getElementById('wrong-title');
+  const wl=document.getElementById('wrong-list');
+  wl.innerHTML='';
+  if(wrongItems.length===0){wt.textContent='오답 없음 - 완벽!';return;}
+  wt.textContent='이번 오답 ('+wrongItems.length+'문제)';
+  wrongItems.forEach(w=>{
+    const d=document.createElement('div');
+    d.className='wrong-card';
+    d.innerHTML='<div class="wq">'+w.q+'</div><div class="wa">내 답: '+w.myAns+'</div><div class="wc">정답: '+w.correct+'</div><div class="we">'+w.exp+'</div>';
+    wl.appendChild(d);
+  });
+}
+
+function showWrongNote(){
+  allWrong=JSON.parse(localStorage.getItem('wrongNote')||'[]');
+  showScreen('s-note');
+  const nl=document.getElementById('note-list');
+  nl.innerHTML='';
+  if(allWrong.length===0){nl.innerHTML='<div style="color:#888;font-size:14px;padding:1rem">저장된 오답이 없어.</div>';return;}
+  allWrong.forEach(w=>{
+    const d=document.createElement('div');
+    d.className='wrong-card';
+    d.innerHTML='<div class="cat-badge">'+w.cat+'</div><div class="wq">'+w.q+'</div><div class="wa">내 답: '+w.myAns+'</div><div class="wc">정답: '+w.correct+'</div><div class="we">'+w.exp+'</div>';
+    nl.appendChild(d);
+  });
+}
+
+function clearNote(){
+  if(confirm('오답노트를 초기화할까요?')){localStorage.removeItem('wrongNote');allWrong=[];showWrongNote();}
+}
+
+function goHome(){
+  allWrong=JSON.parse(localStorage.getItem('wrongNote')||'[]');
+  document.getElementById('note-btn').style.display=allWrong.length>0?'inline-block':'none';
+  showScreen('s-start');
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>{s.style.display='none';s.classList.remove('active')});
+  const el=document.getElementById(id);
+  el.style.display='block';el.classList.add('active');
+}
+
+allWrong=JSON.parse(localStorage.getItem('wrongNote')||'[]');
+if(allWrong.length>0)document.getElementById('note-btn').style.display='inline-block';
+</script>
+</body>
+</html>
