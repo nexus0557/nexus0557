@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>의학용어 퀴즈</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3e;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --correct: #00e5a0;
+    --wrong: #ff4d6d;
+    --text: #e8e8f0;
+    --text2: #8888aa;
+    --text3: #555577;
+    --glow: rgba(108,99,255,0.3);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, '맑은 고딕', sans-serif;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    word-break: keep-all;
+  }
+
+  #canvas-bg { position: fixed; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; opacity:0.35; }
+
+  .app { position: relative; z-index:1; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* HEADER */
+  .header {
+    padding: 24px 20px 16px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(108,99,255,0.08) 0%, transparent 100%);
+  }
+  .header-title {
+    font-size: 11px; font-family: 'Space Mono', monospace;
+    letter-spacing: 4px; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 6px;
+  }
+  .header-main { font-size: 20px; font-weight: 900; letter-spacing: -0.5px; }
+  .header-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+  /* PROGRESS */
+  .progress-wrap { padding: 14px 20px 0; }
+  .progress-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .progress-label { font-size: 12px; color: var(--text2); font-family:'Space Mono',monospace; }
+  .score-badge {
+    font-size: 11px; font-family:'Space Mono',monospace;
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 3px 10px; border-radius: 20px;
+    display: flex; gap: 10px;
+  }
+  .score-c { color: var(--correct); }
+  .score-w { color: var(--wrong); }
+  .progress-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px; transition: width 0.5s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* CATEGORY FILTER */
+  .cat-scroll { display: flex; gap: 8px; padding: 14px 20px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .cat-scroll::-webkit-scrollbar { display: none; }
+  .cat-btn {
+    flex-shrink: 0; font-size: 11px; font-family:'Noto Sans KR', sans-serif;
+    padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text2); cursor: pointer;
+    transition: all 0.2s; white-space: nowrap;
+    min-height: 36px; display: flex; align-items: center;
+  }
+  .cat-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 0 12px var(--glow); }
+
+  /* QUESTION CARD */
+  .card-wrap { flex: 1; padding: 0 16px 24px; }
+  .question-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 22px 18px 18px;
+    position: relative;
+    overflow: hidden;
+    animation: cardIn 0.4s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes cardIn {
+    from { opacity:0; transform: translateY(20px) scale(0.97); }
+    to   { opacity:1; transform: translateY(0) scale(1); }
+  }
+  .card-glow {
+    position: absolute; top:-60px; right:-40px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .q-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .q-chapter {
+    font-size: 10px; font-family:'Noto Sans KR', sans-serif;
+    color: var(--accent); letter-spacing: 1px;
+    background: rgba(108,99,255,0.12); padding: 4px 10px; border-radius: 10px;
+  }
+  .q-type {
+    font-size: 10px; font-family:'Space Mono',monospace;
+    padding: 4px 10px; border-radius: 10px;
+  }
+  .q-type.kor { background: rgba(0,229,160,0.1); color: var(--correct); }
+  .q-type.eng { background: rgba(108,99,255,0.12); color: var(--accent); }
+  .q-num { font-size: 11px; color: var(--text3); font-family:'Space Mono',monospace; }
+  .q-text { font-size: 17px; font-weight: 700; line-height: 1.6; margin-bottom: 20px; word-break: keep-all; }
+
+  /* OPTIONS */
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .opt-btn {
+    position: relative; overflow: hidden;
+    background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: 14px; padding: 14px 16px;
+    text-align: left; cursor: pointer; color: var(--text);
+    font-size: 14px; font-family: 'Noto Sans KR', -apple-system, sans-serif;
+    transition: all 0.2s cubic-bezier(.4,0,.2,1);
+    display: flex; align-items: center; gap: 12px;
+    min-height: 52px;
+    -webkit-appearance: none;
+    word-break: keep-all;
+    line-height: 1.5;
+  }
+  .opt-btn:active { transform: scale(0.98); }
+  .opt-letter {
+    flex-shrink: 0; width: 30px; height: 30px;
+    border-radius: 8px; background: var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-family:'Space Mono',monospace; font-weight: 700;
+    transition: all 0.2s;
+  }
+  .opt-text { flex: 1; line-height: 1.5; }
+  .opt-btn:not(.answered):hover { border-color: var(--accent); background: rgba(108,99,255,0.1); }
+  .opt-btn:not(.answered):hover .opt-letter { background: var(--accent); color: #fff; }
+
+  .opt-btn.correct { border-color: var(--correct); background: rgba(0,229,160,0.1); animation: bounceIn 0.4s cubic-bezier(.34,1.56,.64,1); }
+  .opt-btn.correct .opt-letter { background: var(--correct); color: #0a0a0f; }
+  .opt-btn.wrong { border-color: var(--wrong); background: rgba(255,77,109,0.1); animation: shake 0.4s ease; }
+  .opt-btn.wrong .opt-letter { background: var(--wrong); color: #fff; }
+  .opt-btn.show-correct { border-color: var(--correct); background: rgba(0,229,160,0.06); opacity:0.7; }
+  .opt-btn.show-correct .opt-letter { background: rgba(0,229,160,0.3); }
+
+  @keyframes bounceIn {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.02); }
+    100% { transform: scale(1); }
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
+
+  .ripple { position: absolute; border-radius: 50%; transform: scale(0); animation: rippleAnim 0.5s linear; opacity: 0.3; pointer-events: none; }
+  @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
+
+  /* EXPLANATION */
+  .explanation {
+    margin-top: 14px; padding: 14px 16px;
+    background: rgba(108,99,255,0.07);
+    border: 1px solid rgba(108,99,255,0.2);
+    border-radius: 12px;
+    animation: fadeSlideUp 0.35s ease;
+  }
+  @keyframes fadeSlideUp {
+    from { opacity:0; transform: translateY(8px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+  .expl-header { display:flex; align-items:center; gap:8px; margin-bottom: 8px; }
+  .expl-icon { font-size: 16px; }
+  .expl-label { font-size: 11px; font-family:'Space Mono',monospace; color: var(--accent); letter-spacing: 2px; }
+  .expl-answer { font-size: 14px; font-weight: 700; color: var(--correct); margin-top: 6px; word-break: keep-all; }
+
+  /* NEXT BUTTON */
+  .next-btn {
+    margin-top: 18px; width: 100%; padding: 16px;
+    background: linear-gradient(135deg, var(--accent), #8b7fff);
+    border: none; border-radius: 14px; color: #fff;
+    font-size: 15px; font-weight: 700; font-family:'Noto Sans KR', sans-serif;
+    cursor: pointer; letter-spacing: 0.5px;
+    box-shadow: 0 4px 20px var(--glow);
+    transition: all 0.2s; display: none;
+    animation: fadeSlideUp 0.35s ease;
+    min-height: 52px;
+    -webkit-appearance: none;
+  }
+  .next-btn:active { transform: scale(0.97); }
+  .next-btn.visible { display: block; }
+
+  /* RESULT SCREEN */
+  .result-screen {
+    display: none; flex-direction: column; align-items: center;
+    padding: 40px 24px; text-align: center;
+  }
+  .result-screen.show { display: flex; animation: cardIn 0.5s ease; }
+  .result-emoji { font-size: 64px; margin-bottom: 16px; animation: bounce 1s ease infinite; }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+  .result-title { font-size: 26px; font-weight: 900; margin-bottom: 8px; }
+  .result-score {
+    font-size: 60px; font-weight: 900; font-family:'Space Mono',monospace;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    margin: 10px 0;
+  }
+  .result-sub { font-size: 14px; color: var(--text2); margin-bottom: 32px; word-break: keep-all; }
+  .result-stats {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    width: 100%; max-width: 320px; margin-bottom: 32px;
+  }
+  .stat-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 16px; text-align: center;
+  }
+  .stat-num { font-size: 28px; font-weight: 900; font-family:'Space Mono',monospace; }
+  .stat-label { font-size: 11px; color: var(--text2); margin-top: 4px; }
+  .restart-btn {
+    width: 100%; max-width: 320px; padding: 16px;
+    background: linear-gradient(135deg, var(--accent), #8b7fff);
+    border: none; border-radius: 14px; color: #fff;
+    font-size: 15px; font-weight: 700; font-family:'Noto Sans KR', sans-serif;
+    cursor: pointer; box-shadow: 0 4px 20px var(--glow);
+    min-height: 52px; -webkit-appearance: none;
+  }
+
+  /* LOADING */
+  .loading {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 100; gap: 20px;
+  }
+  .loading-ring {
+    width: 48px; height: 48px; border-radius: 50%;
+    border: 3px solid var(--border); border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 13px; color: var(--text2); font-family:'Space Mono',monospace; letter-spacing: 2px; }
+
+  /* MOBILE */
+  @media (max-width: 480px) {
+    .header-main { font-size: 18px; }
+    .q-text { font-size: 15px; }
+    .opt-btn { font-size: 13px; padding: 13px 14px; }
+    .opt-text { font-size: 13px; }
+    .card-wrap { padding: 0 12px 20px; }
+    .question-card { padding: 18px 14px 14px; border-radius: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="canvas-bg"></canvas>
+
+<div class="loading" id="loading">
+  <div class="loading-ring"></div>
+  <div class="loading-text">LOADING...</div>
+</div>
+
+<div class="app" id="app" style="display:none;">
+  <div class="header">
+    <div class="header-title">Medical Terminology</div>
+    <div class="header-main">의학용어 퀴즈</div>
+    <div class="header-sub">5·6단원 + 추가용어 · 4지선다</div>
+  </div>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-info">
+      <span class="progress-label" id="progressLabel">1 / 20</span>
+      <span class="score-badge">
+        <span class="score-c" id="scoreC">✓ 0</span>
+        <span class="score-w" id="scoreW">✗ 0</span>
+      </span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+
+  <div class="cat-scroll" id="catScroll"></div>
+
+  <div class="card-wrap" id="cardWrap">
+    <div class="question-card" id="questionCard">
+      <div class="card-glow"></div>
+      <div class="q-meta">
+        <span class="q-chapter" id="qChapter">CH.05 소화계통</span>
+        <span class="q-type eng" id="qType">ENG → KOR</span>
+      </div>
+      <div class="q-text" id="qText">문제가 여기에 표시됩니다.</div>
+      <div class="options" id="options"></div>
+      <div id="explanation" style="display:none;" class="explanation">
+        <div class="expl-header"><span class="expl-icon">💡</span><span class="expl-label">ANSWER</span></div>
+        <div class="expl-answer" id="explAnswer"></div>
+      </div>
+      <button class="next-btn" id="nextBtn">다음 문제 →</button>
+    </div>
+  </div>
+
+  <div class="result-screen" id="resultScreen">
+    <div class="result-emoji" id="resultEmoji">🏆</div>
+    <div class="result-title" id="resultTitle">퀴즈 완료!</div>
+    <div class="result-score" id="resultScore">0%</div>
+    <div class="result-sub" id="resultSub">수고하셨습니다!</div>
+    <div class="result-stats">
+      <div class="stat-box"><div class="stat-num score-c" id="statC">0</div><div class="stat-label">정답</div></div>
+      <div class="stat-box"><div class="stat-num score-w" id="statW">0</div><div class="stat-label">오답</div></div>
+      <div class="stat-box"><div class="stat-num" id="statTotal">0</div><div class="stat-label">총 문제</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--accent)" id="statRate">0%</div><div class="stat-label">정답률</div></div>
+    </div>
+    <button class="restart-btn" onclick="restart()">🔄 다시 도전</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// 용어 데이터
+// ══════════════════════════════════════════
+const TERMS = [
+  // CH.05 소화계통
+  { cat:"CH.05 소화계통", en:"tongue", ko:"혀" },
+  { cat:"CH.05 소화계통", en:"vomiting", ko:"구토" },
+  { cat:"CH.05 소화계통", en:"body", ko:"몸통(체)" },
+  { cat:"CH.05 소화계통", en:"cardia", ko:"들문(분문)" },
+  { cat:"CH.05 소화계통", en:"pylorus", ko:"날문(유문)" },
+  { cat:"CH.05 소화계통", en:"antrum", ko:"날문방(위체양전부위)" },
+  { cat:"CH.05 소화계통", en:"fundus", ko:"바닥(기저)" },
+  { cat:"CH.05 소화계통", en:"common bile duct (CBD)", ko:"총담관" },
+  { cat:"CH.05 소화계통", en:"hepatoma", ko:"간암" },
+  { cat:"CH.05 소화계통", en:"hepatitis", ko:"간염" },
+  { cat:"CH.05 소화계통", en:"cholecystectomy", ko:"담낭절제술" },
+  { cat:"CH.05 소화계통", en:"cholecystostomy", ko:"담낭창냄술" },
+  { cat:"CH.05 소화계통", en:"cholecystotomy", ko:"담낭절개술" },
+  { cat:"CH.05 소화계통", en:"ectomy", ko:"절제술(조직·장기 없애는 것)" },
+  { cat:"CH.05 소화계통", en:"otomy", ko:"절개술(몸을 잠깐 열거나 가르는 것)" },
+  { cat:"CH.05 소화계통", en:"ostomy / stomy", ko:"연결술(통로 만들어 계속 사용)" },
+  { cat:"CH.05 소화계통", en:"scopy", ko:"내시경" },
+  { cat:"CH.05 소화계통", en:"ectasis", ko:"확장증" },
+  { cat:"CH.05 소화계통", en:"itis", ko:"염증" },
+  { cat:"CH.05 소화계통", en:"oma", ko:"종양" },
+  { cat:"CH.05 소화계통", en:"ulcer", ko:"궤양" },
+  { cat:"CH.05 소화계통", en:"esophageal cancer", ko:"식도암" },
+  { cat:"CH.05 소화계통", en:"esophagitis", ko:"식도염" },
+  { cat:"CH.05 소화계통", en:"GERD", ko:"위식도역류" },
+  { cat:"CH.05 소화계통", en:"stomach cancer", ko:"위암" },
+  { cat:"CH.05 소화계통", en:"gastritis", ko:"위염" },
+  { cat:"CH.05 소화계통", en:"gastric ulcer", ko:"위궤양" },
+  { cat:"CH.05 소화계통", en:"gastric perforation", ko:"위천공" },
+  { cat:"CH.05 소화계통", en:"panperitonitis", ko:"복막염" },
+  { cat:"CH.05 소화계통", en:"sedation", ko:"수면(진정)" },
+  { cat:"CH.05 소화계통", en:"biopsy", ko:"조직검사" },
+
+  // CH.06 호흡계통
+  { cat:"CH.06 호흡계통", en:"respiration", ko:"호흡" },
+  { cat:"CH.06 호흡계통", en:"inspiration", ko:"들숨" },
+  { cat:"CH.06 호흡계통", en:"expiration", ko:"날숨" },
+  { cat:"CH.06 호흡계통", en:"nasal conchae", ko:"코선반" },
+  { cat:"CH.06 호흡계통", en:"pharynx", ko:"인두" },
+  { cat:"CH.06 호흡계통", en:"nasopharynx", ko:"코인두" },
+  { cat:"CH.06 호흡계통", en:"paranasal sinus (PNS)", ko:"코곁굴(부비동)" },
+  { cat:"CH.06 호흡계통", en:"maxillary sinus", ko:"상악동" },
+  { cat:"CH.06 호흡계통", en:"ethmoid sinus", ko:"사골동" },
+  { cat:"CH.06 호흡계통", en:"frontal sinus", ko:"전두동" },
+  { cat:"CH.06 호흡계통", en:"sphenoid sinus", ko:"접형동" },
+  { cat:"CH.06 호흡계통", en:"tonsil", ko:"편도" },
+  { cat:"CH.06 호흡계통", en:"palatine tonsil", ko:"구개편도" },
+  { cat:"CH.06 호흡계통", en:"pharyngeal tonsil", ko:"인두편도" },
+  { cat:"CH.06 호흡계통", en:"lingual tonsil", ko:"혀편도" },
+  { cat:"CH.06 호흡계통", en:"alveolus", ko:"폐포" },
+  { cat:"CH.06 호흡계통", en:"ARDS", ko:"급성호흡곤란증후군" },
+  { cat:"CH.06 호흡계통", en:"cough", ko:"기침" },
+  { cat:"CH.06 호흡계통", en:"hiccough / hiccup", ko:"딸꾹질" },
+  { cat:"CH.06 호흡계통", en:"sputum", ko:"가래" },
+  { cat:"CH.06 호흡계통", en:"hydrothorax", ko:"물가슴증(수흉증)" },
+  { cat:"CH.06 호흡계통", en:"pneumothorax", ko:"공기가슴증(기흉)" },
+  { cat:"CH.06 호흡계통", en:"thoracentesis", ko:"가슴천자" },
+  { cat:"CH.06 호흡계통", en:"influenza", ko:"인플루엔자" },
+  { cat:"CH.06 호흡계통", en:"rhinitis", ko:"비염(코염)" },
+  { cat:"CH.06 호흡계통", en:"sinusitis", ko:"굴염(부비동염)" },
+  { cat:"CH.06 호흡계통", en:"asthma", ko:"천식" },
+  { cat:"CH.06 호흡계통", en:"dyspnea", ko:"호흡곤란" },
+  { cat:"CH.06 호흡계통", en:"bronchiectasis", ko:"기관지확장증" },
+  { cat:"CH.06 호흡계통", en:"endotracheal intubation", ko:"기관내삽관" },
+  { cat:"CH.06 호흡계통", en:"tracheostomy", ko:"기관절개술" },
+  { cat:"CH.06 호흡계통", en:"bronchitis", ko:"기관지염" },
+  { cat:"CH.06 호흡계통", en:"bronchoscopy", ko:"기관지경술" },
+  { cat:"CH.06 호흡계통", en:"COPD", ko:"만성폐쇄폐질환" },
+  { cat:"CH.06 호흡계통", en:"pneumonia", ko:"폐렴" },
+  { cat:"CH.06 호흡계통", en:"pulmonary embolism", ko:"폐색전증" },
+  { cat:"CH.06 호흡계통", en:"pulmonary tuberculosis (TB)", ko:"폐결핵" },
+  { cat:"CH.06 호흡계통", en:"hemangioma", ko:"혈관종" },
+
+  // CH.04 심장혈관계통
+  { cat:"CH.04 심장혈관계통", en:"hemorrhage", ko:"출혈" },
+  { cat:"CH.04 심장혈관계통", en:"angina pectoris", ko:"협심증" },
+  { cat:"CH.04 심장혈관계통", en:"ischemic heart disease", ko:"허혈성심장병" },
+  { cat:"CH.04 심장혈관계통", en:"myocardial infarction (MI)", ko:"심근경색" },
+  { cat:"CH.04 심장혈관계통", en:"mitral regurgitation", ko:"승판역류" },
+  { cat:"CH.04 심장혈관계통", en:"mitral stenosis", ko:"승모판협착" },
+  { cat:"CH.04 심장혈관계통", en:"aneurysm", ko:"동맥류" },
+  { cat:"CH.04 심장혈관계통", en:"arteriosclerosis", ko:"동맥경화증" },
+  { cat:"CH.04 심장혈관계통", en:"atherosclerosis", ko:"죽상동맥경화증" },
+  { cat:"CH.04 심장혈관계통", en:"embolism", ko:"색전증" },
+  { cat:"CH.04 심장혈관계통", en:"embolus", ko:"색전" },
+  { cat:"CH.04 심장혈관계통", en:"infarct", ko:"경색" },
+  { cat:"CH.04 심장혈관계통", en:"infarction", ko:"경색증" },
+  { cat:"CH.04 심장혈관계통", en:"thrombosis", ko:"혈전증" },
+  { cat:"CH.04 심장혈관계통", en:"thrombus", ko:"혈전" },
+  { cat:"CH.04 심장혈관계통", en:"AIDS", ko:"후천면역결핍증후군" },
+  { cat:"CH.04 심장혈관계통", en:"CPR", ko:"심폐소생술" },
+  { cat:"CH.04 심장혈관계통", en:"coronary angiography", ko:"심혈관조영술" },
+
+  // CH.08 비뇨계통
+  { cat:"CH.08 비뇨계통", en:"acute renal failure (ARF)", ko:"급성신부전" },
+  { cat:"CH.08 비뇨계통", en:"chronic renal failure (CRF)", ko:"만성신부전" },
+  { cat:"CH.08 비뇨계통", en:"cystitis", ko:"방광염" },
+  { cat:"CH.08 비뇨계통", en:"dysuria", ko:"배뇨통" },
+  { cat:"CH.08 비뇨계통", en:"glycosuria", ko:"당뇨" },
+  { cat:"CH.08 비뇨계통", en:"diabetes mellitus (DM)", ko:"당뇨병" },
+  { cat:"CH.08 비뇨계통", en:"hematuria", ko:"혈뇨" },
+  { cat:"CH.08 비뇨계통", en:"hydronephrosis", ko:"수신증" },
+  { cat:"CH.08 비뇨계통", en:"urinary tract infection (UTI)", ko:"요로감염" },
+  { cat:"CH.08 비뇨계통", en:"pyelonephritis", ko:"신우신염" },
+  { cat:"CH.08 비뇨계통", en:"ureterolithiasis", ko:"요관결석증" },
+  { cat:"CH.08 비뇨계통", en:"urolithiasis", ko:"요로결석" },
+  { cat:"CH.08 비뇨계통", en:"ESWL", ko:"체외충격파쇄석" },
+  { cat:"CH.08 비뇨계통", en:"hemodialysis", ko:"혈액투석" },
+  { cat:"CH.08 비뇨계통", en:"intravenous pyelography (IVP)", ko:"정맥신우조영술" },
+  { cat:"CH.08 비뇨계통", en:"urticaria", ko:"두드러기" },
+
+  // 추가 용어
+  { cat:"추가 용어", en:"vital sign (VS)", ko:"활력징후" },
+  { cat:"추가 용어", en:"blood pressure (BP)", ko:"혈압" },
+  { cat:"추가 용어", en:"heart rate (HR)", ko:"맥박수" },
+  { cat:"추가 용어", en:"saturation (SpO2)", ko:"산소포화도" },
+  { cat:"추가 용어", en:"fever", ko:"발열" },
+  { cat:"추가 용어", en:"chills", ko:"오한" },
+  { cat:"추가 용어", en:"syncope", ko:"실신" },
+  { cat:"추가 용어", en:"dizziness", ko:"어지럼" },
+  { cat:"추가 용어", en:"headache", ko:"두통" },
+  { cat:"추가 용어", en:"chest pain", ko:"흉통" },
+  { cat:"추가 용어", en:"abdominal pain", ko:"복통" },
+  { cat:"추가 용어", en:"vomiting", ko:"구토" },
+  { cat:"추가 용어", en:"back pain", ko:"요통" },
+  { cat:"추가 용어", en:"swelling", ko:"부기" },
+  { cat:"추가 용어", en:"cyanosis", ko:"청색증" },
+  { cat:"추가 용어", en:"acute", ko:"급성" },
+  { cat:"추가 용어", en:"chronic", ko:"만성" },
+  { cat:"추가 용어", en:"infection", ko:"감염" },
+  { cat:"추가 용어", en:"medial", ko:"내측" },
+  { cat:"추가 용어", en:"lateral", ko:"외측" },
+  { cat:"추가 용어", en:"anterior", ko:"전방" },
+  { cat:"추가 용어", en:"posterior", ko:"후방" },
+  { cat:"추가 용어", en:"superior", ko:"상부" },
+  { cat:"추가 용어", en:"inferior", ko:"하부" },
+  { cat:"추가 용어", en:"proximal", ko:"근위" },
+  { cat:"추가 용어", en:"distal", ko:"원위" },
+];
+
+const CATS = ["전체", "CH.05 소화계통", "CH.06 호흡계통", "CH.04 심장혈관계통", "CH.08 비뇨계통", "추가 용어"];
+const QUIZ_COUNT = 20;
+
+let currentCat = "전체";
+let filteredQ = [];
+let idx = 0;
+let answered = false;
+let correctCount = 0;
+let wrongCount = 0;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function makeQuestions() {
+  const pool = currentCat === "전체" ? TERMS : TERMS.filter(t => t.cat === currentCat);
+  const selected = shuffle(pool).slice(0, QUIZ_COUNT);
+  return selected.map(item => {
+    const isEtoK = Math.random() < 0.5;
+    const others = TERMS.filter(t => t !== item);
+    const distractors = shuffle(others).slice(0, 3);
+    if (isEtoK) {
+      return { cat: item.cat, question: item.en, answer: item.ko, opts: shuffle([item.ko, ...distractors.map(d=>d.ko)]), type: 'eng' };
+    } else {
+      return { cat: item.cat, question: item.ko, answer: item.en, opts: shuffle([item.en, ...distractors.map(d=>d.en)]), type: 'kor' };
+    }
+  });
+}
+
+function renderCats() {
+  const wrap = document.getElementById('catScroll');
+  wrap.innerHTML = '';
+  CATS.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-btn' + (c === currentCat ? ' active' : '');
+    const count = c === '전체' ? TERMS.length : TERMS.filter(t=>t.cat===c).length;
+    btn.textContent = `${c} (${count})`;
+    btn.onclick = () => { currentCat = c; restart(); renderCats(); };
+    wrap.appendChild(btn);
+  });
+}
+
+function renderQuestion() {
+  if (idx >= filteredQ.length) { showResult(); return; }
+  answered = false;
+  const q = filteredQ[idx];
+  const total = filteredQ.length;
+
+  document.getElementById('qChapter').textContent = q.cat;
+  const typeEl = document.getElementById('qType');
+  typeEl.textContent = q.type === 'eng' ? 'ENG → KOR' : 'KOR → ENG';
+  typeEl.className = 'q-type ' + q.type;
+  document.getElementById('qText').textContent = q.question;
+  document.getElementById('explanation').style.display = 'none';
+  document.getElementById('nextBtn').classList.remove('visible');
+
+  document.getElementById('progressLabel').textContent = `${idx+1} / ${total}`;
+  document.getElementById('progressFill').style.width = `${(idx/total)*100}%`;
+  document.getElementById('scoreC').textContent = `✓ ${correctCount}`;
+  document.getElementById('scoreW').textContent = `✗ ${wrongCount}`;
+
+  const letters = ['A','B','C','D'];
+  const optWrap = document.getElementById('options');
+  optWrap.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.innerHTML = `<span class="opt-letter">${letters[i]}</span><span class="opt-text">${opt}</span>`;
+    btn.onclick = (e) => handleAnswer(e, btn, opt, q);
+    optWrap.appendChild(btn);
+  });
+
+  const card = document.getElementById('questionCard');
+  card.style.animation = 'none';
+  requestAnimationFrame(() => { card.style.animation = 'cardIn 0.4s cubic-bezier(.34,1.56,.64,1)'; });
+}
+
+function handleAnswer(e, btn, chosen, q) {
+  if (answered) return;
+  answered = true;
+
+  const ripple = document.createElement('span');
+  ripple.className = 'ripple';
+  const rect = btn.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height) * 2;
+  const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left - size/2;
+  const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top - size/2;
+  ripple.style.cssText = `width:${size}px;height:${size}px;left:${cx}px;top:${cy}px;background:${chosen===q.answer?'#00e5a0':'#ff4d6d'}`;
+  btn.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 500);
+
+  const isCorrect = chosen === q.answer;
+  if (isCorrect) { correctCount++; btn.classList.add('correct'); }
+  else {
+    wrongCount++;
+    btn.classList.add('wrong');
+    document.querySelectorAll('.opt-btn').forEach(b => {
+      if (b !== btn && b.querySelector('.opt-text').textContent === q.answer) b.classList.add('show-correct');
+    });
+  }
+
+  document.querySelectorAll('.opt-btn').forEach(b => b.classList.add('answered'));
+
+  document.getElementById('explAnswer').textContent = `정답: ${q.answer}`;
+  document.getElementById('explanation').style.display = 'block';
+  document.getElementById('nextBtn').classList.add('visible');
+  document.getElementById('scoreC').textContent = `✓ ${correctCount}`;
+  document.getElementById('scoreW').textContent = `✗ ${wrongCount}`;
+
+  // 모바일: 정답 확인 후 스크롤
+  setTimeout(() => {
+    document.getElementById('explanation').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 300);
+}
+
+document.getElementById('nextBtn').onclick = () => {
+  idx++;
+  renderQuestion();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+function showResult() {
+  document.getElementById('cardWrap').style.display = 'none';
+  document.getElementById('progressWrap').style.display = 'none';
+  const total = filteredQ.length;
+  const rate = total ? Math.round(correctCount/total*100) : 0;
+  document.getElementById('resultScreen').classList.add('show');
+  document.getElementById('resultScore').textContent = rate + '%';
+  document.getElementById('statC').textContent = correctCount;
+  document.getElementById('statW').textContent = wrongCount;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statRate').textContent = rate + '%';
+  let emoji = '😅', title = '다시 도전해봐요!';
+  if (rate >= 90) { emoji = '🏆'; title = '완벽합니다!'; }
+  else if (rate >= 70) { emoji = '🎉'; title = '훌륭해요!'; }
+  else if (rate >= 50) { emoji = '💪'; title = '절반 이상!'; }
+  document.getElementById('resultEmoji').textContent = emoji;
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultSub').textContent = `총 ${total}문제 중 ${correctCount}문제 정답!`;
+}
+
+function restart() {
+  correctCount = 0; wrongCount = 0; idx = 0;
+  filteredQ = makeQuestions();
+  document.getElementById('resultScreen').classList.remove('show');
+  document.getElementById('cardWrap').style.display = '';
+  document.getElementById('progressWrap').style.display = '';
+  renderQuestion();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// 파티클 배경
+(function() {
+  const canvas = document.getElementById('canvas-bg');
+  const ctx = canvas.getContext('2d');
+  let W, H, dots = [];
+  function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+  for (let i = 0; i < 50; i++) {
+    dots.push({ x: Math.random()*W, y: Math.random()*H, r: Math.random()*1.5+0.3, vx: (Math.random()-.5)*0.3, vy: (Math.random()-.5)*0.3, op: Math.random()*0.5+0.1 });
+  }
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+    dots.forEach(d => {
+      d.x += d.vx; d.y += d.vy;
+      if (d.x < 0) d.x = W; if (d.x > W) d.x = 0;
+      if (d.y < 0) d.y = H; if (d.y > H) d.y = 0;
+      ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(108,99,255,${d.op})`; ctx.fill();
+    });
+    for (let i = 0; i < dots.length; i++) {
+      for (let j = i+1; j < dots.length; j++) {
+        const dx = dots[i].x-dots[j].x, dy = dots[i].y-dots[j].y;
+        const dist = Math.sqrt(dx*dx+dy*dy);
+        if (dist < 120) {
+          ctx.beginPath(); ctx.moveTo(dots[i].x, dots[i].y); ctx.lineTo(dots[j].x, dots[j].y);
+          ctx.strokeStyle = `rgba(108,99,255,${0.15*(1-dist/120)})`; ctx.lineWidth = 0.5; ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+window.onload = () => {
+  setTimeout(() => {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    renderCats();
+    filteredQ = makeQuestions();
+    renderQuestion();
+  }, 600);
+};
+</script>
+</body>
+</html>
