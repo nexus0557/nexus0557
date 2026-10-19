@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPE 보건통합 실전 모의고사</title>
+    <style>
+        :root {
+            --primary-color: #4A90E2;
+            --hover-color: #357ABD;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+        }
+        body {
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .quiz-container {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            max-width: 650px;
+            width: 100%;
+            padding: 30px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+            color: #666;
+            font-weight: bold;
+        }
+        .question {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 25px;
+            line-height: 1.5;
+            word-break: keep-all;
+        }
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .option-btn {
+            background-color: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 1em;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+            line-height: 1.4;
+            word-break: keep-all;
+        }
+        .option-btn:hover:not(.disabled) {
+            border-color: var(--primary-color);
+            background-color: #ebf5ff;
+        }
+        .option-btn.correct {
+            background-color: #d4edda !important;
+            border-color: #28a745 !important;
+            color: #155724;
+            font-weight: bold;
+        }
+        .option-btn.wrong {
+            background-color: #f8d7da !important;
+            border-color: #dc3545 !important;
+            color: #721c24;
+            font-weight: bold;
+        }
+        .option-btn.disabled {
+            cursor: default;
+            pointer-events: none;
+        }
+        .explanation {
+            margin-top: 25px;
+            padding: 18px;
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+            border-radius: 6px;
+            font-size: 0.95em;
+            line-height: 1.6;
+            display: none;
+            word-break: keep-all;
+        }
+        .next-btn {
+            margin-top: 25px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 1.05em;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            display: none;
+            transition: background-color 0.2s;
+        }
+        .next-btn:hover {
+            background-color: var(--hover-color);
+        }
+        .result-screen {
+            display: none;
+        }
+        .score-board {
+            text-align: center;
+            padding-bottom: 25px;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 25px;
+        }
+        .score {
+            font-size: 3.5em;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 15px 0;
+        }
+        .review-item {
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 5px solid #ccc;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .review-item.is-correct {
+            border-left-color: #28a745;
+        }
+        .review-item.is-wrong {
+            border-left-color: #dc3545;
+        }
+        .review-q {
+            font-weight: bold;
+            margin-bottom: 12px;
+            font-size: 1.05em;
+            line-height: 1.4;
+        }
+        .review-detail {
+            font-size: 0.95em;
+            color: #444;
+            line-height: 1.6;
+        }
+        .review-detail span.wrong-text { color: #dc3545; font-weight: bold; }
+        .review-detail span.correct-text { color: #28a745; font-weight: bold; }
+        .explanation-box {
+            margin-top: 10px;
+            padding: 12px;
+            background-color: #e9ecef;
+            border-radius: 6px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container" id="quiz-box">
+    <div class="header">
+        <span id="progress">문제 1 / 35</span>
+        <span id="score-tracker">맞힌 개수: 0</span>
+    </div>
+    <div class="question" id="question-text">문제 내용이 여기에 표시됩니다.</div>
+    <div class="options" id="options-container"></div>
+    <div class="explanation" id="explanation-text"></div>
+    <button class="next-btn" id="next-btn" onclick="nextQuestion()">다음 문제</button>
+</div>
+
+<div class="quiz-container result-screen" id="result-box">
+    <div class="score-board">
+        <h2>모의고사 종료!</h2>
+        <div class="score" id="final-score">0 / 35</div>
+    </div>
+    <h3 style="text-align: center; margin-bottom: 20px;">오답 노트 및 전체 결과</h3>
+    <div id="review-container"></div>
+    <button class="next-btn" style="display: block; margin-top: 30px;" onclick="location.reload()">처음부터 다시 풀기</button>
+</div>
+
+<script>
+    const quizData = [
+        {
+            question: "다음 중 IPE(Interprofessional Education)의 3대 요소에 해당하지 않는 것은?",
+            options: [
+                "서로로부터 배우기 (from)",
+                "서로에 대하여 배우기 (about)",
+                "서로 경쟁하며 배우기 (against)",
+                "서로와 함께 배우기 (with)"
+            ],
+            answer: 2,
+            explanation: "IPE의 3대 요소는 전문 지식을 공유하는 '서로로부터 배우기', 타 직종을 이해하는 '서로에 대하여 배우기', 팀으로서 문제를 해결하는 '서로와 함께 배우기'입니다."
+        },
+        {
+            question: "다전공 협업의 필요성 중 '전문가(보건의료인) 측면'에서 얻을 수 있는 직접적인 이점은?",
+            options: [
+                "치료 기간 단축을 통한 경제적 이득",
+                "만성질환자의 단일 치료법 개발",
+                "중복 검사 방지",
+                "업무 분담과 동료 지원을 통한 번아웃 방지 및 직무 만족도 향상"
+            ],
+            answer: 3,
+            explanation: "치료 기간 단축이나 중복 검사 방지는 경제/자원적 측면이며, 전문가 측면에서는 업무 분담과 동료 지원을 통해 번아웃을 방지하고 직무 만족도를 향상시킬 수 있습니다."
+        },
+        {
+            question: "직종이기주의(Professional Egoism)를 극복하기 위해 보건의료 종사자가 '협력적 태도의 중요성'을 인식할 때 얻을 수 있는 이점으로 틀린 것은?",
+            options: [
+                "팀 접근을 통해 1+1 > 2 수준의 시너지를 창출한다.",
+                "환자 안전을 지키는 최후의 보루 역할을 한다.",
+                "직무 만족도를 높이고 번아웃을 방지하며 자원을 최적으로 활용하게 한다.",
+                "각 직종의 전문성을 배타적 특권으로 보호하여 기득권을 강화한다."
+            ],
+            answer: 3,
+            explanation: "각 전문직이 가진 전문성이 배타적 특권으로 변질되어 내 직종의 이익만 챙기는 태도는 '직종이기주의'의 원인이자 개념 그 자체이므로, 협력적 태도의 이점이 아닙니다."
+        },
+        {
+            question: "다직종 간 협업 시 직종 간 윤리적 가치가 충돌할 때, 의사결정의 최우선 기준이 되어야 하는 것은?",
+            options: [
+                "각 직종의 윤리강령 우선순위",
+                "환자의 이익과 안녕",
+                "병원의 경제적 이익",
+                "의사의 임상적 판단"
+            ],
+            answer: 1,
+            explanation: "각 전문직의 윤리강령은 다르지만 지향점은 '환자의 안녕'으로 동일하므로, 가치 충돌이나 윤리적 딜레마 발생 시 항상 '환자의 이익'을 최우선 기준으로 삼아야 합니다."
+        },
+        {
+            question: "간호사의 안전한 투약 5원칙(5 Rights)에 포함되지 않는 것은?",
+            options: [
+                "정확한 환자 (Right Patient)",
+                "정확한 약물 (Right Drug)",
+                "정확한 비용 (Right Cost)",
+                "정확한 경로 (Right Route)"
+            ],
+            answer: 2,
+            explanation: "안전한 투약 5원칙은 정확한 환자, 정확한 약물, 정확한 용량, 정확한 시간, 정확한 경로입니다. 비용은 포함되지 않습니다."
+        },
+        {
+            question: "췌장의 베타세포가 파괴되어 인슐린이 전혀 분비되지 않으므로 반드시 체외 인슐린 주입 치료가 필수적인 당뇨병의 유형은?",
+            options: [
+                "1형 당뇨병",
+                "2형 당뇨병",
+                "임신당뇨병",
+                "특발성 당뇨병"
+            ],
+            answer: 0,
+            explanation: "1형 당뇨병은 췌장의 베타세포 파괴로 인슐린이 분비되지 않는 질환이며, 2형 당뇨병은 인슐린 분비 장애와 잘못된 생활습관 등으로 발생합니다."
+        },
+        {
+            question: "자가혈당측정 시 올바른 방법이 아닌 것은?",
+            options: [
+                "채혈침은 새로운 것을 채혈기에 단단히 삽입한다.",
+                "혈액을 많이 얻기 위해 손가락 끝을 강하게 쥐어짠다.",
+                "통증이 적은 손가락 측면(옆면)을 선택하여 채혈한다.",
+                "채혈 부위는 매번 바꿔가며 사용한다."
+            ],
+            answer: 1,
+            explanation: "채혈 시 손가락을 가볍게 눌러 적정량의 혈액을 얻어야 하며, 너무 세게 쥐어짜면 정확한 측정이 어려울 수 있습니다."
+        },
+        {
+            question: "환자의 혈청이나 혈장을 검체로 하여 기지의 적혈구 시약(A-혈구, B-혈구)과 반응시켜 동종항체의 유무를 확인하는 검사 방법은?",
+            options: [
+                "혈청형 검사 (Serum typing)",
+                "혈구형 검사 (Cell typing)",
+                "교차적합시험",
+                "응집반응검사"
+            ],
+            answer: 0,
+            explanation: "검체 혈청(또는 혈장)에 적혈구 부유액 시약을 혼합하여 반응을 관찰하는 것은 동종항체를 검사하는 혈청형 검사입니다."
+        },
+        {
+            question: "ABO 혈액형 검사 중 혈구형 검사(Cell typing)에 사용되는 Anti-A 항혈청 시약의 색상은?",
+            options: [
+                "무색",
+                "붉은색",
+                "노란색",
+                "파란색"
+            ],
+            answer: 3,
+            explanation: "시약 구분을 위해 Anti-A 혈청은 trypan blue 색소가 첨가되어 파란색을 띠며, Anti-B 혈청은 acriflavine 색소로 인해 노란색입니다."
+        },
+        {
+            question: "혈구형 검사(Cell typing)에서 Anti-A 시약에 응집(+) 반응, Anti-B 시약에 비응집(-) 반응을 보였을 때 환자의 ABO 혈액형은?",
+            options: [
+                "A형",
+                "B형",
+                "O형",
+                "AB형"
+            ],
+            answer: 0,
+            explanation: "적혈구가 Anti-A 시약과 반응하여 응집(+)이 일어났다는 것은 표면에 A항원이 존재한다는 의미이므로 A형으로 판정합니다."
+        },
+        {
+            question: "의료 현장에서 X선이 발생되는 기본 원리로 가장 적절한 것은?",
+            options: [
+                "방사성 동위원소가 스스로 붕괴하면서 발생한다.",
+                "전자를 가속시켜 금속 표적(양극)에 부딪히게 하여 운동에너지를 전자기파로 변환한다.",
+                "양전자가 음전자와 결합하여 소멸할 때 에너지가 방출된다.",
+                "자기장을 걸어주어 수소 원자핵의 스핀을 변화시킨다."
+            ],
+            answer: 1,
+            explanation: "X선관 내에서 가속된 전자가 금속 표적(양극)에 충돌할 때, 전자의 운동에너지가 X선(전자기파) 에너지로 전환되어 발생합니다."
+        },
+        {
+            question: "다음 중 전자기파의 일종인 X선을 사용하여 내부 구조를 확인하는 진단 검사가 아닌 것은?",
+            options: [
+                "흉부 X-ray 검사",
+                "CT (컴퓨터단층촬영)",
+                "초음파 검사 (Ultrasound)",
+                "유방 촬영술 (Mammography)"
+            ],
+            answer: 2,
+            explanation: "일반 진단검사 중 초음파 검사는 소리 파동을 이용하고, MRI는 자기장을 이용하므로 둘 다 X선을 사용하지 않습니다."
+        },
+        {
+            question: "X-ray 영상에서 인체의 뼈가 하얗게 나타나는 주된 이유는 무엇인가?",
+            options: [
+                "뼈가 X선을 투과시켜 필름을 검게 만들기 때문이다.",
+                "뼈 조직이 X선을 많이 흡수하여 검출기에 도달하는 X선의 양이 적어지기 때문이다.",
+                "뼈 내부의 수분이 X선과 반응하여 산란선을 생성하기 때문이다.",
+                "뼈에서 자체적으로 형광 물질이 발광하기 때문이다."
+            ],
+            answer: 1,
+            explanation: "조직 밀도가 높은 뼈는 X선을 많이 흡수하여 인체를 통과해 검출기에 도달하는 X선 양이 줄어들므로 필름상에 하얗게 보입니다."
+        },
+        {
+            question: "방사선 안전관리의 원칙 중 '거리역자승법칙'에 따르면, 방사선원으로부터의 거리가 2배 멀어질 때 측정되는 선량은 어떻게 변화하는가?",
+            options: [
+                "약 1/2로 줄어든다.",
+                "약 1/4로 줄어든다.",
+                "약 1/8로 줄어든다.",
+                "거리와 상관없이 일정하다."
+            ],
+            answer: 1,
+            explanation: "거리가 2배 멀어지면 방사선의 강도는 거리의 제곱에 반비례하여 약 1/4로 크게 줄어듭니다. 이는 방사선 안전관리의 핵심입니다."
+        },
+        {
+            question: "다음 중 자세(Posture)에 대한 정의로 가장 올바른 설명은 무엇인가?",
+            options: [
+                "심폐지구력의 다른 이름",
+                "근육의 크기를 측정하는 것",
+                "단순히 서 있는 고정된 상태",
+                "신체 각 분절의 상대적 정렬"
+            ],
+            answer: 3,
+            explanation: "자세(Posture)란 신체 각 분절이 서로 어떠한 위치 관계를 이루고 있는지를 나타내는 상대적 정렬(alignment)을 의미합니다."
+        },
+        {
+            question: "옆면(Lateral view) 자세 평가 시, 중력(gravity line)을 관찰하는 가장 주된 목적은 무엇인가?",
+            options: [
+                "신체 전후방 무게 중심의 정렬과 관절 부하 분석",
+                "하지의 실제 길이 차이 측정",
+                "양쪽 어깨와 골반의 수평적 대칭 확인",
+                "척추 측만증(Scoliosis)의 진행 단계 파악"
+            ],
+            answer: 0,
+            explanation: "측면 평가에서는 신체의 전후방 무게 중심과 척추의 정상적인 전/후만 커브를 확인하여, 기계적 스트레스와 관절 부하를 분석합니다."
+        },
+        {
+            question: "인체의 측면에서 바라본 이상적 자세(Ideal Posture)의 중력선 통과 기준으로 올바르지 않은 것은?",
+            options: [
+                "바깥귀길(EAM)을 통과한다.",
+                "무릎관절의 앞쪽을 통과한다.",
+                "가쪽 복사뼈 앞쪽을 통과한다.",
+                "제5~6목뼈 몸통 앞쪽을 통과한다."
+            ],
+            answer: 3,
+            explanation: "측면 중력선은 제5~6목뼈 몸통의 앞쪽이 아니라 '뒤쪽'을 통과해야 정상적이고 이상적인 정렬입니다."
+        },
+        {
+            question: "척추 정렬 평가 중 둥근 등, 거북목을 유발하며 등뼈(Thoracic)의 과도한 뒤굽음이 증가한 상태를 뜻하는 진단 용어는?",
+            options: [
+                "척추앞굽음증 (Lordosis)",
+                "척추뒤굽음증 (Kyphosis)",
+                "척추옆굽음증 (Scoliosis)",
+                "척추분리증"
+            ],
+            answer: 1,
+            explanation: "등뼈의 과도한 뒤굽음이 증가하여 둥근 등을 유발하는 상태를 척추뒤굽음증(Kyphosis)이라고 합니다."
+        },
+        {
+            question: "해부학적 지표를 기준으로 실제 뼈의 길이를 측정하는 ‘실제 다리 길이(True Leg Length)’ 측정 시 시작점과 끝점으로 옳은 것은 무엇인가?",
+            options: [
+                "위앞엉덩가시(ASIS) - 가쪽복사(Lateral Malleolus)",
+                "위앞엉덩뼈가시(ASIS) - 안쪽복사(Medial Malleolus)",
+                "배꼽(Umbilicus) - 안쪽복사(Medial Malleolus)",
+                "배꼽(Umbilicus) - 가쪽복사(Lateral Malleolus)"
+            ],
+            answer: 1,
+            explanation: "실제 다리 길이(True Leg Length)는 골격 자체의 구조적 차이를 확인하기 위해 위앞엉덩뼈가시(ASIS)에서 안쪽복사(Medial Malleolus)까지의 길이를 측정합니다."
+        },
+        {
+            question: "신체계측 중 '외견상 다리 길이(Apparent Leg Length)'를 측정할 때 기준으로 삼는 두 해부학적 지표는?",
+            options: [
+                "위앞엉덩뼈가시(ASIS) ↔ 안쪽복사(Medial Malleolus)",
+                "배꼽(Umbilicus) ↔ 안쪽복사(Medial Malleolus)",
+                "위앞엉덩뼈가시(ASIS) ↔ 가쪽복사(Lateral Malleolus)",
+                "배꼽(Umbilicus) ↔ 무릎뼈(Patella)"
+            ],
+            answer: 1,
+            explanation: "골반의 기울어짐이나 척추 정렬 이상이 반영된 기능적 차이를 평가하는 '외견상 다리 길이'는 배꼽(Umbilicus)에서 안쪽복사(Medial Malleolus)까지의 길이를 측정합니다."
+        },
+        {
+            question: "다음 중 작업치료에서 말하는 '작업(Occupation)'에 대한 설명으로 가장 올바른 것은 무엇인가?",
+            options: [
+                "병원에서 실시하는 치료 활동만을 의미한다.",
+                "사람이 의미를 가지고 수행하는 모든 활동을 의미한다.",
+                "돈을 벌기 위한 직업 활동만을 의미한다.",
+                "신체 운동과 근력 강화 운동만을 의미한다."
+            ],
+            answer: 1,
+            explanation: "작업치료에서 '작업'은 사람이 살아가면서 의미를 가지고 수행하는 일상생활활동, 휴식, 일, 여가 등 모든 활동을 포괄합니다."
+        },
+        {
+            question: "다음 중 작업치료의 궁극적인 목표로 가장 적절한 것은 무엇인가?",
+            options: [
+                "질병을 완전히 치료하는 것",
+                "독립적인 일상생활과 사회참여를 통해 삶의 질을 향상시키는 것",
+                "근력을 최대한 증가시키는 것",
+                "병원 입원 기간을 단축시키는 것"
+            ],
+            answer: 1,
+            explanation: "작업치료의 궁극적 목표는 질병 자체의 치유보다는 대상자가 독립적으로 일상생활을 수행하고 사회에 참여하여 삶의 질을 향상시키는 데 있습니다."
+        },
+        {
+            question: "작업치료에서 분류하는 '수단적 일상생활활동(IADL)'에 해당하는 것은?",
+            options: [
+                "식사하기 (Feeding)",
+                "목욕하기 (Bathing)",
+                "옷 입기 (Dressing)",
+                "재정 관리 (Financial management)"
+            ],
+            answer: 3,
+            explanation: "복잡한 문제해결력과 환경 상호작용이 필요한 활동(재정 관리, 운전, 동물 돌보기 등)이 IADL입니다. 식사나 목욕은 기본적 ADL입니다."
+        },
+        {
+            question: "다음 중 삼킴장애(Dysphagia)가 위험한 가장 큰 이유는 무엇인가?",
+            options: [
+                "식욕이 감소하기 때문이다.",
+                "체중이 증가하기 때문이다.",
+                "소화 기능이 저하되기 때문이다.",
+                "음식이 기도로 들어가 흡인성 폐렴이 발생할 수 있기 때문이다."
+            ],
+            answer: 3,
+            explanation: "삼킴장애는 음식물이 식도가 아닌 기도로 잘못 넘어가는 흡인을 유발할 수 있으며, 이는 치명적인 흡인성 폐렴으로 직결될 수 있습니다."
+        },
+        {
+            question: "다음 중 일상생활활동 중재 시 보상적 접근(Compensatory approach)의 예로 가장 적절한 것은 무엇인가?",
+            options: [
+                "손 근력을 강화하기 위한 운동을 실시한다.",
+                "마비된 근육을 정상적으로 회복시키기 위한 전기치료를 실시한다.",
+                "어깨 관절의 움직임을 회복시키기 위한 치료를 한다.",
+                "특수 식기를 사용하여 한 손으로 식사하도록 돕는다."
+            ],
+            answer: 3,
+            explanation: "보상적 접근은 손상된 기능을 회복시키기보다는, 환경을 수정하거나 특수 식기 같은 도구를 사용하여 남아있는 기능으로 일상생활을 돕는 방법입니다."
+        },
+        {
+            question: "다음 중 전산화 인지재활치료의 특징으로 가장 적절한 것은 무엇인가?",
+            options: [
+                "운동기구만을 이용하여 치료한다.",
+                "기억력보다 근력을 향상시키는 것이 목적이다.",
+                "프로그램이 자동으로 난이도를 조절하고 결과를 저장할 수 있다.",
+                "치료사가 종이와 연필만 사용하여 치료한다."
+            ],
+            answer: 2,
+            explanation: "전산화 인지재활치료는 컴퓨터, 태블릿 등을 이용하여 프로그램이 환자의 수행에 맞춰 자동으로 난이도를 조절하고 수행 결과를 기록합니다."
+        },
+        {
+            question: "의료보장 제도의 유형 중 우리나라가 채택하고 있는 방식은?",
+            options: [
+                "국가보건서비스방식(NHS: National Health Service)",
+                "사회보험방식(NHI: National Health Insurance)",
+                "조세방식",
+                "민간보험방식(Consumer Sovereignty Model)"
+            ],
+            answer: 1,
+            explanation: "우리나라는 국민의 보험료와 정부의 일부 지원으로 재원을 조달하는 사회보험방식(NHI)을 채택하고 있습니다."
+        },
+        {
+            question: "생활유지 능력이 없거나 생활이 어려운 저소득 국민의 의료 문제를 국가가 보장하는 공공(적)부조 제도는?",
+            options: [
+                "자동차보험",
+                "국민건강보험",
+                "산업재해보상보험",
+                "의료급여"
+            ],
+            answer: 3,
+            explanation: "저소득층의 의료문제를 국가가 세금으로 보장하는 공공부조 제도는 의료급여(1종, 2종)입니다."
+        },
+        {
+            question: "진료에 지장 없는 시설을 갖추고, 주로 외래환자에 대한 의료를 행할 목적으로 개설하는 의료기관은?",
+            options: [
+                "전문병원",
+                "상급종합병원",
+                "의원, 치과의원, 한의원",
+                "종합병원"
+            ],
+            answer: 2,
+            explanation: "의원, 치과의원, 한의원 등 의원급 의료기관은 주로 입원이 아닌 외래환자를 대상으로 의료를 행하기 위해 개설됩니다."
+        },
+        {
+            question: "진찰료 산정기준 중 해당 상병으로 동일한 의사에게 계속해서 진료를 받는 경우 어떤 환자라고 하는가?",
+            options: [
+                "신환",
+                "구환",
+                "초진",
+                "재진"
+            ],
+            answer: 3,
+            explanation: "질병 양상별 구분에서 해당 상병으로 동일한 의사에게 계속해서 진료를 받는 경우 재진(再診)으로 산정합니다."
+        },
+        {
+            question: "입원 수속 시 병원으로부터 의료서비스를 제공받은 환자가 부담해야 할 진료비납부에 관한 보증뿐 아니라, 의료 관련법과 병원의 관리 규칙을 지키고 이행할 것을 확인하는 계약서는 무엇인가?",
+            options: [
+                "입원 결정서",
+                "퇴원 결정서",
+                "퇴원 계산서",
+                "입원 약정서"
+            ],
+            answer: 3,
+            explanation: "입원 약정서는 진료비 납부 채권확보 대책이자 병원 규칙 준수를 약속하는 필수 서류입니다."
+        },
+        {
+            question: "우리나라 건강보험제도의 운영 체계에서, 요양기관이 청구한 진료비용의 적정성을 객관적이고 공정하게 심사·평가하는 기관은?",
+            options: [
+                "보건복지부",
+                "국민건강보험공단",
+                "건강보험심사평가원",
+                "대한의사협회"
+            ],
+            answer: 2,
+            explanation: "요양기관이 청구한 요양급여비용의 적정성을 심사하고 공정하게 평가하는 기준을 담당하는 전문 기구는 건강보험심사평가원(HIRA)입니다."
+        },
+        {
+            question: "국민건강보험의 '중증질환 산정특례 제도'에 따라 암(악성신생물) 및 심혈관 질환 환자가 병원 진료 시 지원받는 금액과 본인부담률은 요양급여비용총액의 몇 %인가?",
+            options: [
+                "90% 지원 (본인부담 10%)",
+                "95% 지원 (본인부담 5%)",
+                "80% 지원 (본인부담 20%)",
+                "60% 지원 (본인부담 40%)"
+            ],
+            answer: 1,
+            explanation: "암(악성신생물), 심장 질환, 뇌혈관 질환 등은 중증질환 산정특례에 의해 의료비의 95%를 지원받아 5%만 본인이 부담하면 됩니다."
+        },
+        {
+            question: "일반 외래 환자가 동네 의원이 아닌 '상급종합병원'을 방문하여 진료를 받았을 때 적용되는 외래 본인부담률(비급여 제외) 기준은?",
+            options: [
+                "진찰료 전액(100%) + 나머지 요양급여비용총액의 60%",
+                "요양급여비용총액의 50%",
+                "진찰료 50% + 나머지 요양급여비용총액의 20%",
+                "요양급여비용총액의 30%"
+            ],
+            answer: 0,
+            explanation: "대형병원 쏠림을 방지하기 위해 상급종합병원 외래 진료 시 본인부담률은 진찰료 100% 전액 부담 및 나머지 요양급여비용의 60% 부담으로 규정되어 있습니다."
+        },
+        {
+            question: "업무 중 발생한 신체상의 피해나 경제적 손실을 신속하고 공정하게 보상하기 위해 사업주 가입을 국가가 의무화한 강제 사회보험 제도는?",
+            options: [
+                "자동차보험(자보)",
+                "국민연금",
+                "산업재해보상보험(산재)",
+                "국민건강보험"
+            ],
+            answer: 2,
+            explanation: "재해 근로자의 생활 안정을 도모하고 사업주의 일시적 비용 부담을 보험을 통해 분산시키기 위해 국가가 책임지는 제도는 산업재해보상보험(산재)입니다."
+        }
+    ];
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    shuffleArray(quizData);
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let answered = false;
+    let userResults = []; 
+
+    const progressEl = document.getElementById('progress');
+    const scoreTrackerEl = document.getElementById('score-tracker');
+    const questionEl = document.getElementById('question-text');
+    const optionsContainer = document.getElementById('options-container');
+    const explanationEl = document.getElementById('explanation-text');
+    const nextBtn = document.getElementById('next-btn');
+    const quizBox = document.getElementById('quiz-box');
+    const resultBox = document.getElementById('result-box');
+    const reviewContainer = document.getElementById('review-container');
+
+    function loadQuestion() {
+        answered = false;
+        explanationEl.style.display = 'none';
+        nextBtn.style.display = 'none';
+        optionsContainer.innerHTML = '';
+        
+        const currentData = quizData[currentQuestionIndex];
+        progressEl.innerText = `문제 ${currentQuestionIndex + 1} / ${quizData.length}`;
+        questionEl.innerText = `Q. ${currentData.question}`;
+
+        currentData.options.forEach((option, index) => {
+            const button = document.createElement('button');
+            button.innerText = option;
+            button.classList.add('option-btn');
+            button.onclick = () => selectAnswer(index, button);
+            optionsContainer.appendChild(button);
+        });
+    }
+
+    function selectAnswer(selectedIndex, buttonEl) {
+        if (answered) return;
+        answered = true;
+
+        const currentData = quizData[currentQuestionIndex];
+        const allButtons = optionsContainer.children;
+        const isCorrect = (selectedIndex === currentData.answer);
+
+        userResults.push({
+            question: currentData.question,
+            options: currentData.options,
+            correctAnswerIndex: currentData.answer,
+            userAnswerIndex: selectedIndex,
+            isCorrect: isCorrect,
+            explanation: currentData.explanation
+        });
+
+        if (isCorrect) {
+            buttonEl.classList.add('correct');
+            score++;
+            scoreTrackerEl.innerText = `맞힌 개수: ${score}`;
+        } else {
+            buttonEl.classList.add('wrong');
+            allButtons[currentData.answer].classList.add('correct');
+        }
+
+        for(let btn of allButtons) {
+            btn.classList.add('disabled');
+        }
+
+        explanationEl.innerText = currentData.explanation;
+        explanationEl.style.display = 'block';
+        nextBtn.innerText = currentQuestionIndex === quizData.length - 1 ? '전체 결과 보기' : '다음 문제';
+        nextBtn.style.display = 'block';
+    }
+
+    function nextQuestion() {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < quizData.length) {
+            quizBox.style.animation = 'none';
+            quizBox.offsetHeight; 
+            quizBox.style.animation = 'fadeIn 0.5s ease-in-out';
+            loadQuestion();
+        } else {
+            showResult();
+        }
+    }
+
+    function showResult() {
+        quizBox.style.display = 'none';
+        resultBox.style.display = 'block';
+        document.getElementById('final-score').innerText = `${score} / ${quizData.length}`;
+
+        userResults.forEach((result, index) => {
+            const reviewDiv = document.createElement('div');
+            reviewDiv.className = `review-item ${result.isCorrect ? 'is-correct' : 'is-wrong'}`;
+            
+            let answerTextHtml = "";
+            if (result.isCorrect) {
+                answerTextHtml = `✅ <span class="correct-text">선택: ${result.options[result.userAnswerIndex]}</span>`;
+            } else {
+                answerTextHtml = `❌ <span class="wrong-text">내 오답: ${result.options[result.userAnswerIndex]}</span><br>
+                                  ⭕ <span class="correct-text">올바른 정답: ${result.options[result.correctAnswerIndex]}</span>`;
+            }
+
+            reviewDiv.innerHTML = `
+                <div class="review-q">Q${index + 1}. ${result.question}</div>
+                <div class="review-detail">
+                    ${answerTextHtml}
+                    <div class="explanation-box"><b>💡 해설:</b> ${result.explanation}</div>
+                </div>
+            `;
+            reviewContainer.appendChild(reviewDiv);
+        });
+    }
+
+    loadQuestion();
+</script>
+
+</body>
+</html>
