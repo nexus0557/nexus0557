@@ -31,21 +31,18 @@
             width: 100%; max-width: 800px;
             border-radius: 12px;
             box-shadow: 0 8px 30px rgba(0,0,0,0.08);
-            padding: 3rem 2.5rem;
+            padding: 2.5rem 2rem;
             box-sizing: border-box;
             border-top: 6px solid var(--secondary);
         }
-        h1 { text-align: center; color: var(--primary); font-size: 2rem; margin-top: 0; }
-        .subtitle { text-align: center; color: #7F8C8D; line-height: 1.6; margin-bottom: 2rem; font-size: 1.05rem;}
+        h1 { text-align: center; color: var(--primary); font-size: 1.8rem; margin-top: 0; word-break: keep-all; }
+        .subtitle { text-align: center; color: #7F8C8D; line-height: 1.5; margin-bottom: 2rem; font-size: 1rem; word-break: keep-all;}
         
         .btn {
-            width: 100%; padding: 16px; margin: 8px 0;
+            width: 100%; padding: 14px 16px; margin: 6px 0;
             border: 1px solid #E0E0E0; border-radius: 8px;
             font-size: 1.1rem; cursor: pointer; transition: all 0.2s;
             background: #FFF; color: var(--text); text-align: left;
-            word-break: keep-all; 
-            display: flex; 
-            align-items: flex-start; /* 텍스트가 여러 줄일 때 위쪽 정렬되도록 수정 */
         }
         .btn:hover:not(:disabled) { background: var(--hover); border-color: var(--secondary); transform: translateY(-1px); }
         .btn:disabled { cursor: default; }
@@ -58,37 +55,44 @@
         .correct { background: var(--correct) !important; color: white !important; border-color: var(--correct) !important; }
         .wrong { background: var(--wrong) !important; color: white !important; border-color: var(--wrong) !important; text-decoration: line-through;}
         
-        /* 키워드 시각적 강조 배지 */
+        /* 1. 객관식 긴 문장 속 핵심 키워드 형광펜 효과 */
+        .btn b {
+            color: #D35400;
+            background-color: #FFF2CC;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 800;
+            margin: 0 2px;
+            box-shadow: 1px 1px 0px rgba(0,0,0,0.05);
+        }
+        
+        /* 2. 주관식 문제 배지 효과 (기존 유지) */
         .kw-badge {
             display: inline-block;
-            background-color: #FFF2CC;
-            color: #D35400;
+            background-color: #E8F8F5;
+            color: #117A65;
             font-weight: 800;
             padding: 4px 10px;
             border-radius: 6px;
-            border: 1px solid #F1C40F;
+            border: 1px solid #A3E4D7;
             margin-right: 8px;
-            margin-bottom: 4px; /* 모바일 줄바꿈 시 간격 확보 */
+            margin-bottom: 4px;
             box-shadow: 1px 1px 0px rgba(0,0,0,0.05);
             white-space: nowrap;
         }
         
-        .btn.correct .kw-badge, .btn.wrong .kw-badge {
-            background-color: rgba(255,255,255,0.2);
-            color: white;
-            border-color: white;
+        .btn.correct b, .btn.wrong b, .btn.correct .kw-badge, .btn.wrong .kw-badge {
+            color: #FFF;
+            background-color: rgba(255,255,255,0.25);
+            border-color: transparent;
+            box-shadow: none;
         }
 
-        /* 주관식 작성 팁 피드백 박스 */
         .write-tip {
-            margin-top: 15px;
-            padding: 12px 15px;
-            background-color: #FDEDEC;
-            border-left: 5px solid #E74C3C;
-            border-radius: 0 6px 6px 0;
-            color: #C0392B;
-            font-size: 1.1rem;
-            font-weight: 600;
+            margin-top: 15px; padding: 12px 15px;
+            background-color: #FDEDEC; border-left: 5px solid #E74C3C;
+            border-radius: 0 6px 6px 0; color: #C0392B;
+            font-size: 1.05rem; font-weight: 600;
         }
 
         .screen { display: none; animation: fadeIn 0.4s ease; }
@@ -99,7 +103,7 @@
         .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 2px solid #EEE; padding-bottom: 10px; font-weight: 600; color: #555;}
         .chapter-badge { background: var(--hover); color: var(--secondary); padding: 6px 14px; border-radius: 20px; font-size: 0.9rem; }
         
-        .question-box { font-size: 1.3rem; font-weight: 700; margin-bottom: 1.5rem; line-height: 1.5; color: var(--primary); }
+        .question-box { font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem; line-height: 1.5; color: var(--primary); word-break: keep-all; }
         
         .explanation {
             background: var(--exp-bg); border-left: 5px solid var(--secondary);
@@ -195,8 +199,13 @@
             const btn = document.createElement('button');
             btn.className = 'btn';
             
-            // flex 속성을 제거하고 자연스러운 block 요소로 줄바꿈되도록 수정
-            btn.innerHTML = `<span style="font-weight:bold; flex-shrink:0; margin-right:12px; margin-top:2px;">${index + 1}.</span> <div style="flex:1; line-height:1.6;">${optText}</div>`;
+            // 모바일에서 깨지지 않도록 Flex Gap 레이아웃 적용 및 단어 쪼개기(break-word) 적용
+            btn.innerHTML = `
+                <div style="display: flex; gap: 8px; align-items: flex-start; width: 100%;">
+                    <span style="font-weight:800; color:var(--secondary); flex-shrink:0; line-height:1.5;">${index + 1}.</span> 
+                    <div style="flex:1; line-height:1.5; word-break: break-word;">${optText}</div>
+                </div>
+            `;
             
             btn.onclick = () => checkAnswer(index, btn);
             optionsArea.appendChild(btn);
