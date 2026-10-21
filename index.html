@@ -44,7 +44,8 @@
             font-size: 1.1rem; cursor: pointer; transition: all 0.2s;
             background: #FFF; color: var(--text); text-align: left;
             word-break: keep-all; 
-            display: flex; align-items: center; /* 키워드와 설명 정렬 */
+            display: flex; 
+            align-items: flex-start; /* 텍스트가 여러 줄일 때 위쪽 정렬되도록 수정 */
         }
         .btn:hover:not(:disabled) { background: var(--hover); border-color: var(--secondary); transform: translateY(-1px); }
         .btn:disabled { cursor: default; }
@@ -66,7 +67,8 @@
             padding: 4px 10px;
             border-radius: 6px;
             border: 1px solid #F1C40F;
-            margin-right: 12px;
+            margin-right: 8px;
+            margin-bottom: 4px; /* 모바일 줄바꿈 시 간격 확보 */
             box-shadow: 1px 1px 0px rgba(0,0,0,0.05);
             white-space: nowrap;
         }
@@ -192,8 +194,10 @@
         qData.opts.forEach((optText, index) => {
             const btn = document.createElement('button');
             btn.className = 'btn';
-            // flex 구조를 활용해 번호와 내용을 깔끔하게 분리
-            btn.innerHTML = `<span style="font-weight:bold; flex-shrink:0; margin-right:12px;">${index + 1}.</span> <div style="flex:1; line-height:1.4; display:flex; align-items:center;">${optText}</div>`;
+            
+            // flex 속성을 제거하고 자연스러운 block 요소로 줄바꿈되도록 수정
+            btn.innerHTML = `<span style="font-weight:bold; flex-shrink:0; margin-right:12px; margin-top:2px;">${index + 1}.</span> <div style="flex:1; line-height:1.6;">${optText}</div>`;
+            
             btn.onclick = () => checkAnswer(index, btn);
             optionsArea.appendChild(btn);
         });
