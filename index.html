@@ -17,15 +17,16 @@
       --text: #e5eaf0;
       --muted: #aab5c2;
       --green: #a4e2bd;
-      --green-bg: #233c31;
-      --red: #f0b0ac;
-      --red-bg: #412d32;
+      --red: #fca5a5;
+      --red-strong: #ef4444;
+      --red-bg: #451d24;
       --accent: #b7cbe2;
       --accent-bg: #273444;
       --yellow: #facc15;
       --yellow-hover: #fde047;
       --yellow-border: #fef08a;
-      --yellow-ink: #171408;
+      --yellow-soft: #fef9c3;
+      --yellow-ink: #111827;
       --sky: #38bdf8;
       --sky-hover: #7dd3fc;
       --sky-border: #bae6fd;
@@ -297,23 +298,27 @@
       display: flex;
       flex-direction: column;
       min-width: 0;
-      padding: 24px;
+      padding: 22px 24px 24px;
       border: 1px solid #34404c;
       border-radius: 18px;
       background: var(--card);
     }
 
-    .card-body {
-      min-width: 0;
-    }
-
+    /* 카드 상단 메타 정보: 스크롤 영역 밖에 고정해 잘림 방지 */
     .card-top {
+      flex: 0 0 auto;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
       gap: 8px;
+      padding-bottom: 12px;
       margin-bottom: 14px;
+      border-bottom: 1px solid #2b3540;
+    }
+
+    .card-body {
+      min-width: 0;
     }
 
     #question-meta {
@@ -323,14 +328,15 @@
       color: #dce9f7;
       font-size: .92rem;
       font-weight: 800;
+      white-space: nowrap;
     }
 
     #source-number {
       color: var(--accent);
-      font-size: 1.06rem;
+      font-size: 1.04rem;
       font-weight: 800;
       line-height: 1.35;
-      white-space: pre-line;
+      text-align: right;
     }
 
     #question {
@@ -350,17 +356,18 @@
 
     .choice {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 12px;
       width: 100%;
       min-width: 0;
       padding: 14px 15px;
-      border: 1px solid var(--line);
+      border: 1.5px solid var(--line);
       border-radius: 12px;
       background: var(--option);
       color: var(--text);
       text-align: left;
       cursor: pointer;
+      transition: background-color .14s ease, border-color .14s ease, opacity .14s ease;
     }
 
     .choice-number {
@@ -368,58 +375,83 @@
       place-items: center;
       flex: 0 0 28px;
       min-height: 28px;
-      border: 1px solid #667689;
+      border: 1.5px solid #667689;
       border-radius: 8px;
       color: #c5cfdb;
       font-size: .85rem;
-      font-weight: 700;
+      font-weight: 800;
     }
 
     .choice-text {
-      flex: 1;
+      flex: 1 1 auto;
       min-width: 0;
       font-size: 1rem;
       line-height: 1.5;
       white-space: pre-line;
       overflow-wrap: anywhere;
+      word-break: keep-all;
     }
 
-    .choice-status {
-      display: inline-block;
-      margin-left: 8px;
-      font-size: .82rem;
-      font-weight: 800;
+    /* 오른쪽 독립 뱃지: 글씨와 절대 겹치지 않음 */
+    .choice-badge {
+      flex: 0 0 auto;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: .8rem;
+      font-weight: 850;
+      line-height: 1.2;
+      white-space: nowrap;
     }
 
+    /* 정답 선지: 한눈에 확 띄는 노란색 박스 */
     .choice.correct {
-      border-color: #85bc99;
-      background: var(--green-bg);
-      color: #e1f7e9;
+      border: 2px solid var(--yellow-border);
+      background: var(--yellow);
+      color: var(--yellow-ink);
+      box-shadow: 0 0 0 2px rgba(250, 204, 21, .28), 0 6px 16px rgba(250, 204, 21, .22);
     }
 
     .choice.correct .choice-number {
-      border-color: var(--green);
-      color: var(--green);
+      border-color: var(--yellow-ink);
+      background: var(--yellow-ink);
+      color: var(--yellow);
     }
 
-    .choice.correct .choice-status {
-      color: var(--green);
+    .choice.correct .choice-text {
+      font-weight: 800;
+      color: var(--yellow-ink);
     }
 
+    .choice.correct .choice-badge {
+      background: var(--yellow-ink);
+      color: var(--yellow-border);
+    }
+
+    /* 내가 고른 오답 선지 */
     .choice.wrong {
-      border-color: #cb918d;
+      border: 2px solid #f87171;
       background: var(--red-bg);
+      color: #fee2e2;
     }
 
-    .choice.wrong .choice-number,
-    .choice.wrong .choice-status {
-      color: var(--red);
-      border-color: var(--red);
+    .choice.wrong .choice-number {
+      border-color: #f87171;
+      background: rgba(239, 68, 68, .24);
+      color: #fecaca;
     }
 
+    .choice.wrong .choice-badge {
+      background: var(--red-strong);
+      color: #ffffff;
+    }
+
+    /* 정답 확인 후 관련 없는 선지는 살짝 흐리게 해 정답 박스를 더욱 부각 */
     .choice:disabled {
-      opacity: 1;
       cursor: default;
+    }
+
+    .choice:disabled:not(.correct):not(.wrong) {
+      opacity: .42;
     }
 
     /* 완료 결과 요약 */
@@ -447,7 +479,7 @@
     .final-score-number {
       display: block;
       margin: 4px 0;
-      color: var(--green);
+      color: var(--yellow);
       font-size: 2rem;
       font-weight: 850;
       letter-spacing: -.03em;
@@ -486,69 +518,84 @@
       color: var(--accent);
     }
 
+    /* 정답 및 해설 피드백 영역 */
     #feedback {
       margin-top: 18px;
       padding: 16px;
-      border: 1px solid #547962;
-      border-radius: 13px;
-      background: #203329;
+      border: 2px solid var(--yellow);
+      border-radius: 14px;
+      background: #23261b;
     }
 
     #feedback.is-wrong {
-      background: #302b30;
-      border-color: #906e75;
+      border-color: #f87171;
+      background: #2e2025;
     }
 
     #result {
-      margin: 0 0 10px;
-      color: var(--green);
+      margin: 0 0 12px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: var(--yellow);
+      color: var(--yellow-ink);
       font-size: 1.05rem;
-      font-weight: 750;
+      font-weight: 850;
+      line-height: 1.35;
+      letter-spacing: -.01em;
     }
 
     #feedback.is-wrong #result {
-      color: var(--red);
+      background: var(--red-strong);
+      color: #ffffff;
     }
 
+    /* 정답 박스: 오답일 때도 정답이 노란 테두리로 확 눈에 띄게 */
     .answer-box {
-      padding: 11px 12px;
-      border-radius: 9px;
-      background: #131b20;
+      padding: 12px 14px;
+      border: 1.5px solid var(--yellow);
+      border-radius: 10px;
+      background: #141920;
     }
 
     .answer-label {
-      display: block;
-      margin-bottom: 3px;
-      color: var(--green);
-      font-size: .82rem;
-      font-weight: 700;
+      display: inline-block;
+      margin-bottom: 5px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: var(--yellow);
+      color: var(--yellow-ink);
+      font-size: .78rem;
+      font-weight: 850;
+      line-height: 1.3;
     }
 
     #answer-text {
       margin: 0;
-      color: #f0f7f3;
-      font-size: .98rem;
-      font-weight: 650;
+      color: var(--yellow-soft);
+      font-size: 1.04rem;
+      font-weight: 800;
+      line-height: 1.45;
       overflow-wrap: anywhere;
     }
 
     .explanation-label {
       margin: 13px 0 5px;
-      color: #c3d1e0;
+      color: #cbd5e1;
       font-size: .86rem;
-      font-weight: 700;
+      font-weight: 750;
     }
 
     #explanation {
       margin: 0;
-      color: #e3e8ed;
+      color: #eef2f7;
       font-size: .96rem;
-      line-height: 1.7;
+      line-height: 1.72;
       white-space: pre-line;
       overflow-wrap: anywhere;
     }
 
     .card-footer-actions {
+      flex: 0 0 auto;
       display: grid;
       gap: 8px;
       margin-top: 20px;
@@ -673,7 +720,6 @@
         display: none;
       }
 
-      /* 상단 버튼 바: 눈에 띄는 컬러는 유지하고 높이만 슬림화 */
       .control-bar {
         gap: 7px;
         margin-bottom: 6px;
@@ -699,7 +745,6 @@
         font-size: .78rem;
       }
 
-      /* 점수판: 1줄 4칸 고정 + 큰 숫자 */
       .scoreboard {
         grid-template-columns: 1.25fr 1fr 1fr 1fr;
         gap: 5px;
@@ -728,7 +773,6 @@
         display: none;
       }
 
-      /* 파트 표기: 1줄 3등분 고정 */
       .part-chips {
         flex-wrap: nowrap;
         gap: 5px;
@@ -763,13 +807,28 @@
         margin-bottom: 7px;
       }
 
-      /* 문제 카드: 남은 화면 전체를 차지 + 내부만 필요 시 스크롤 */
+      /* 문제 카드: 상단 고정 + 본문만 스크롤 + 하단 버튼 고정 */
       .card {
         flex: 1 1 auto;
         min-height: 0;
-        padding: 12px 11px 10px;
+        padding: 10px 11px 9px;
         border-radius: 14px;
         overflow: hidden;
+      }
+
+      .card-top {
+        padding-bottom: 7px;
+        margin-bottom: 8px;
+        gap: 6px;
+      }
+
+      #question-meta {
+        padding: 3px 8px;
+        font-size: .78rem;
+      }
+
+      #source-number {
+        font-size: .84rem;
       }
 
       .card-body {
@@ -777,21 +836,7 @@
         min-height: 0;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        padding-right: 2px;
-      }
-
-      .card-top {
-        margin-bottom: 7px;
-        gap: 6px;
-      }
-
-      #question-meta {
-        padding: 2px 8px;
-        font-size: .78rem;
-      }
-
-      #source-number {
-        font-size: .86rem;
+        padding: 2px 2px 4px;
       }
 
       #question {
@@ -805,7 +850,6 @@
       }
 
       .choice {
-        align-items: center;
         gap: 8px;
         padding: 9px 10px;
         border-radius: 10px;
@@ -823,19 +867,22 @@
         line-height: 1.38;
       }
 
-      .choice-status {
+      .choice-badge {
+        padding: 3px 8px;
         font-size: .74rem;
       }
 
       #feedback {
         margin-top: 10px;
         padding: 11px;
-        border-radius: 10px;
+        border-radius: 11px;
       }
 
       #result {
-        margin-bottom: 7px;
-        font-size: .94rem;
+        margin-bottom: 8px;
+        padding: 7px 10px;
+        border-radius: 8px;
+        font-size: .92rem;
       }
 
       .answer-box {
@@ -843,11 +890,12 @@
       }
 
       .answer-label {
-        font-size: .74rem;
+        margin-bottom: 3px;
+        font-size: .72rem;
       }
 
       #answer-text {
-        font-size: .88rem;
+        font-size: .9rem;
       }
 
       .explanation-label {
@@ -873,11 +921,9 @@
         font-size: .9rem;
       }
 
-      /* 하단 버튼은 항상 화면 맨 아래 고정 */
       .card-footer-actions {
-        flex: 0 0 auto;
         gap: 6px;
-        margin-top: 9px;
+        margin-top: 8px;
         padding-top: 8px;
         border-top: 1px solid #2b3540;
       }
@@ -904,6 +950,10 @@
       .part-chip {
         font-size: .74rem;
         padding: 4px 4px;
+      }
+
+      #source-number {
+        font-size: .78rem;
       }
 
       #question {
@@ -988,12 +1038,13 @@
     </div>
 
     <section class="card">
-      <div class="card-body" id="card-body">
-        <div class="card-top">
-          <span id="question-meta"></span>
-          <span id="source-number"></span>
-        </div>
+      <!-- 상단 고정 영역 (스크롤 시 잘림 방지) -->
+      <div class="card-top">
+        <span id="question-meta"></span>
+        <span id="source-number"></span>
+      </div>
 
+      <div class="card-body" id="card-body">
         <h2 id="question">문제를 불러오는 중입니다.</h2>
 
         <div id="choices" role="group" aria-label="선택지"></div>
@@ -1382,30 +1433,31 @@
       [...$("choices").children].forEach((button, index) => {
         button.disabled = true;
 
-        let status = "";
+        let badgeText = "";
         if (index === current.answer) {
           button.classList.add("correct");
-          status = "정답";
+          badgeText = "✓ 정답";
         } else if (index === selected) {
           button.classList.add("wrong");
-          status = "내 선택";
+          badgeText = "✕ 내 선택";
         }
 
-        if (status) {
+        if (badgeText) {
           const badge = document.createElement("span");
-          badge.className = "choice-status";
-          badge.textContent = `[${status}]`;
-          button.querySelector(".choice-text").appendChild(badge);
+          badge.className = "choice-badge";
+          badge.textContent = badgeText;
+          button.appendChild(badge);
         }
       });
 
       $("result").textContent = isCorrect
-        ? "정답입니다! (+1점)"
-        : "오답입니다. 정답을 확인하세요. (0점)";
+        ? "🎉 정답입니다! (+1점)"
+        : "✕ 오답입니다. 노란색 정답을 확인하세요. (0점)";
 
       $("answer-text").textContent =
         `${current.answer + 1}번. ${current.choices[current.answer]}`;
       $("explanation").textContent = current.explanation;
+      $("feedback").classList.toggle("is-correct", isCorrect);
       $("feedback").classList.toggle("is-wrong", !isCorrect);
       $("feedback").hidden = false;
 
@@ -1417,7 +1469,6 @@
           ? "다음 문제"
           : "최종 점수 확인";
 
-      // 해설이 카드 아래에 걸쳐 가려지지 않도록 부드럽게 표시
       requestAnimationFrame(() => {
         $("feedback").scrollIntoView({ behavior: "smooth", block: "nearest" });
       });
